@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مارفل العسكري | النسخة السحابية</title>
+    <title>نظام إدارة الدورات العسكرية | دولة مارفل</title>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // إعدادات Firebase الخاصة بك (من الصورة)
+        // إعدادات Firebase الخاصة بك من الصورة
         const firebaseConfig = {
             apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
             authDomain: "mmca-authority.firebaseapp.com",
@@ -20,148 +21,232 @@
             measurementId: "G-F42TJTC95C"
         };
 
-        // تهيئة Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // متغيرات الجلسة
+        // متغيرات النظام العامة
         let currentUser = null;
+        let examTimer;
+        const questions = [
+            {q: "ما هو البروتوكول العسكري المتبع عند رؤية هدف معادي في منطقة مدنية؟", type: "mcq", options: ["إطلاق النار فوراً", "التبليغ والانتظار", "تجاهل الهدف"], correct: "التبليغ والانتظار"},
+            {q: "اشرح بالتفصيل تقدير الموقف في حال محاصرة دوريتك من قبل 4 آليات معادية؟", type: "essay"}
+        ];
 
-        // --- وظيفة تسجيل اللوقات (إرسال لـ Firebase) ---
+        // --- وظيفة اللوقات المركزية (Firebase) ---
         window.writeLog = function(logNum, message) {
-            const logRef = ref(db, 'logs/L' + logNum);
-            const newLogRef = push(logRef);
-            set(newLogRef, {
+            const logRef = ref(db, `logs/L${logNum}`);
+            push(logRef, {
                 msg: message,
-                id: document.getElementById('in-id').value || "غير معروف",
-                time: new Date().toLocaleString('ar-EG'),
-                role: document.getElementById('in-role').value
+                user: currentUser ? currentUser.name : "نظام",
+                id: currentUser ? currentUser.id : "0",
+                time: new Date().toLocaleTimeString('ar-EG')
             });
         };
 
-        // --- نظام الدخول والتحقق ---
+        // --- نظام تسجيل الدخول ---
         window.validateAndLogin = function() {
             const id = document.getElementById('in-id').value;
             const name = document.getElementById('in-name').value;
+            const code = document.getElementById('in-code').value;
             const role = document.getElementById('in-role').value;
             const pass = document.getElementById('in-pass').value;
 
-            if(!id || !name) return alert("أكمل البيانات!");
-            if(role !== 'متدرب' && pass !== '2121') return alert("كلمة المرور خطأ!");
+            if(!id || !name || !code) return alert("يجب تعبئة كافة الحقول العسكرية!");
+            if(role !== 'متدرب' && pass !== '2121') return alert("كلمة المرور الإدارية خاطئة!");
 
-            currentUser = { id, name, role };
-            
+            currentUser = { id, name, code, role };
+
             if(role === 'متدرب') {
-                switchPage('page-student');
-                writeLog(3, `دخل المتدرب ${name} وبدأ الانتظار`);
-                // إرسال طلب القبول لـ Firebase
-                set(ref(db, 'requests/' + id), { name, id, status: 'waiting' });
+                showPage('page-student');
+                writeLog(3, `بدأ المتدرب ${name} جلسة الانتظار`);
+                set(ref(db, 'requests/' + id), { name, id, code, status: 'waiting' });
                 
-                // مراقبة حالة القبول مباشرة من قاعدة البيانات
-                onValue(ref(db, 'requests/' + id), (snapshot) => {
-                    if (snapshot.val() && snapshot.val().status === 'accepted') {
-                        startOfficialExam();
-                    }
+                // الاستماع لحالة القبول
+                onValue(ref(db, 'requests/' + id), (snap) => {
+                    if(snap.val() && snap.val().status === 'accepted') startExam();
                 });
+            } else if(role === 'مشرف') {
+                showPage('page-admin');
+                writeLog(5, `المشرف ${name} دخل لوحة الإدارة`);
+                initAdmin();
             } else {
-                switchPage(role === 'مشرف' ? 'page-admin' : 'page-logs');
-                writeLog(5, `المشرف ${name} سجل دخوله`);
-                listenToRequests(); // البدء بمراقبة الطلبات
-                listenToLogs();     // البدء بمراقبة اللوقات
+                showPage('page-logs');
+                writeLog(9, `المسؤول ${name} دخل مركز السجلات`);
+                initLogs();
             }
         };
 
-        // --- وظائف الإدارة (تعديل مباشر في Firebase) ---
-        function listenToRequests() {
-            onValue(ref(db, 'requests'), (snapshot) => {
-                const table = document.getElementById('table-req');
-                table.innerHTML = "";
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    if(data.status === 'waiting') {
-                        table.innerHTML += `<tr><td>${data.name}</td><td>${data.id}</td>
-                            <td><button class="btn" onclick="adminAction('${data.id}', 'accepted')">قبول</button></td></tr>`;
+        // --- محرك الاختبار للمتدرب ---
+        function startExam() {
+            document.getElementById('st-waiting').classList.add('hidden');
+            document.getElementById('st-exam').classList.remove('hidden');
+            document.getElementById('timer-box').classList.remove('hidden');
+            writeLog(3, `انتقل المتدرب ${currentUser.name} لمرحلة الاختبار الفعلي`);
+            runTimer(600);
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('exam-content');
+            container.innerHTML = "";
+            questions.forEach((q, i) => {
+                let html = `<div class="q-block"><h4>${i+1}. ${q.q}</h4>`;
+                if(q.type === 'mcq') {
+                    q.options.forEach(opt => {
+                        html += `<label><input type="radio" name="q${i}" value="${opt}"> ${opt}</label><br>`;
+                    });
+                } else {
+                    html += `<textarea id="ans${i}" placeholder="اكتب تحليلك هنا..."></textarea>`;
+                }
+                html += `</div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        window.submitFinalExam = function() {
+            clearInterval(examTimer);
+            writeLog(4, `المتدرب ${currentUser.name} قام بتسليم الإجابات`);
+            set(ref(db, 'exams_to_grade/' + currentUser.id), {
+                name: currentUser.name,
+                answers: "تم استلام الإجابات المسجلة في اللوقات"
+            });
+            alert("تم التسليم بنجاح. انتظر التصحيح.");
+            location.reload();
+        };
+
+        // --- وظائف الإدارة ---
+        function initAdmin() {
+            onValue(ref(db, 'requests'), (snap) => {
+                const tbody = document.getElementById('table-requests');
+                tbody.innerHTML = "";
+                snap.forEach(child => {
+                    const u = child.val();
+                    if(u.status === 'waiting') {
+                        tbody.innerHTML += `<tr><td>${u.name}</td><td>${u.id}</td>
+                            <td><button class="btn-s" onclick="updateReq('${u.id}', 'accepted')">قبول</button>
+                            <button class="btn-d" onclick="updateReq('${u.id}', 'rejected')">رفض</button></td></tr>`;
                     }
                 });
             });
         }
 
-        window.adminAction = function(uid, status) {
-            update(ref(db, 'requests/' + uid), { status: status });
-            writeLog(1, `تم ${status === 'accepted' ? 'قبول' : 'رفض'} المتدرب ${uid}`);
+        window.updateReq = (uid, stat) => {
+            update(ref(db, 'requests/' + uid), { status: stat });
+            writeLog(1, `قرار ${stat} للمتدرب أيدي: ${uid}`);
         };
 
-        // --- عرض اللوقات العشرة مباشرة ---
-        function listenToLogs() {
+        // --- عرض اللوقات العشرة ---
+        function initLogs() {
             for(let i=1; i<=10; i++) {
-                onValue(ref(db, 'logs/L'+i), (snapshot) => {
-                    const box = document.getElementById('L'+i);
+                onValue(ref(db, `logs/L${i}`), (snap) => {
+                    const box = document.getElementById(`L${i}`);
                     box.innerHTML = "";
-                    snapshot.forEach((log) => {
+                    snap.forEach(log => {
                         const d = log.val();
-                        box.innerHTML = `<div>[${d.time}] ${d.msg} (ID: ${d.id})</div>` + box.innerHTML;
+                        box.innerHTML = `<div>[${d.time}] ${d.msg}</div>` + box.innerHTML;
                     });
                 });
             }
         }
 
-        // أدوات المساعدة للصفحات
-        window.switchPage = (id) => {
-            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+        function showPage(id) {
+            document.querySelectorAll('.container').forEach(p => p.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-        };
+        }
+
+        function runTimer(sec) {
+            examTimer = setInterval(() => {
+                let m = Math.floor(sec/60), s = sec%60;
+                document.getElementById('timer-val').innerText = `${m}:${s<10?'0'+s:s}`;
+                if(sec-- <= 0) { clearInterval(examTimer); submitFinalExam(); }
+            }, 1000);
+        }
     </script>
 
     <style>
-        :root { --p: #1a3a5f; --a: #3498db; --bg: #050a10; --card: #0e1a2e; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; direction: rtl; }
-        .container { max-width: 1000px; margin: 20px auto; background: var(--card); padding: 20px; border-radius: 10px; }
+        :root { --p: #1a3a5f; --a: #3498db; --bg: #050a10; --card: #0e1a2e; --s: #27ae60; --d: #c0392b; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; direction: rtl; }
+        .container { max-width: 1100px; margin: 30px auto; background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #1f2d3d; box-shadow: 0 0 40px rgba(0,0,0,0.7); }
         .hidden { display: none !important; }
-        .btn { background: var(--p); color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
-        input, select { width: 100%; padding: 10px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #333; }
-        .log-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .log-box { height: 150px; overflow-y: auto; background: #000; border: 1px solid #222; font-family: monospace; font-size: 11px; padding: 5px; color: #00ff00; }
+        input, select, textarea { background: #000; border: 1px solid #222; color: #fff; padding: 12px; margin: 10px 0; width: 100%; border-radius: 5px; box-sizing: border-box; }
+        .btn { background: var(--p); color: #fff; border: none; padding: 15px 30px; cursor: pointer; width: 100%; font-weight: bold; border-radius: 5px; }
+        .btn-s { background: var(--s); border: none; padding: 8px 15px; color: #fff; cursor: pointer; border-radius: 4px; }
+        .btn-d { background: var(--d); border: none; padding: 8px 15px; color: #fff; cursor: pointer; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #1f2d3d; padding: 12px; text-align: center; }
+        th { background: #162a44; color: var(--a); }
+        .log-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .log-box { height: 180px; overflow-y: auto; background: #000; border: 1px solid #1a2634; color: #00ff41; font-family: monospace; font-size: 11px; padding: 10px; line-height: 1.5; }
+        .timer-box { position: fixed; top: 20px; left: 20px; background: var(--d); padding: 15px; border-radius: 10px; font-weight: bold; z-index: 1000; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .q-block { background: rgba(255,255,255,0.02); padding: 20px; margin-bottom: 20px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
+    <div id="timer-box" class="timer-box hidden">الوقت المتبقي: <span id="timer-val">10:00</span></div>
+
     <div id="page-auth" class="container">
-        <h2>نظام مارفل - الربط السحابي</h2>
-        <input type="text" id="in-id" placeholder="أيدي الديسكورد">
-        <input type="text" id="in-name" placeholder="الاسم الكامل">
-        <select id="in-role">
-            <option value="متدرب">متدرب</option>
-            <option value="مشرف">مشرف (2121)</option>
-            <option value="لوقات">لوقات (2121)</option>
-        </select>
-        <input type="password" id="in-pass" placeholder="الباسورد للمشرفين">
-        <button class="btn" onclick="validateAndLogin()">دخول</button>
+        <h2 style="text-align: center; color: var(--a);">نظام مارفل العسكري - المركز الرئيسي</h2>
+        <div style="max-width: 500px; margin: auto;">
+            <input type="text" id="in-id" placeholder="أيدي الديسكورد">
+            <input type="text" id="in-name" placeholder="الاسم الثلاثي">
+            <input type="text" id="in-code" placeholder="الكود العسكري">
+            <select id="in-role">
+                <option value="متدرب">دخول كمتدرب</option>
+                <option value="مشرف">دخول كمشرف (2121)</option>
+                <option value="لوقات">دخول للمراجعة (2121)</option>
+            </select>
+            <div id="pass-div" class="hidden"><input type="password" id="in-pass" placeholder="كلمة المرور"></div>
+            <button class="btn" onclick="validateAndLogin()">تسجيل الدخول للنظام</button>
+        </div>
     </div>
 
     <div id="page-student" class="container hidden">
-        <h3 id="wait-msg">أهلاً بك.. طلبك معلق الآن، انتظر قبول المشرف لفتح الاختبار تلقائياً.</h3>
+        <div id="st-waiting" style="text-align: center;">
+            <h3 style="color: #f39c12;">طلب الالتحاق قيد المراجعة...</h3>
+            <p>يرجى انتظار موافقة المشرف المسؤول لفتح بوابة الاختبار.</p>
+        </div>
+        <div id="st-exam" class="hidden">
+            <h3>الاختبار التقييمي للدورة العسكرية</h3>
+            <div id="exam-content"></div>
+            <button class="btn" style="background: var(--s);" onclick="submitFinalExam()">إرسال الإجابات النهائية</button>
+        </div>
     </div>
 
     <div id="page-admin" class="container hidden">
-        <h3>طلبات القبول المباشرة (Firebase)</h3>
+        <h2 style="color: var(--a);">لوحة التحكم والإدارة</h2>
+        <h4>طلبات القبول الفورية:</h4>
         <table>
             <thead><tr><th>الاسم</th><th>الأيدي</th><th>الإجراء</th></tr></thead>
-            <tbody id="table-req"></tbody>
+            <tbody id="table-requests"></tbody>
         </table>
     </div>
 
     <div id="page-logs" class="container hidden">
-        <h3>مركز اللوقات الشامل</h3>
+        <h2 style="text-align: center; color: var(--d);">مركز السجلات الأمني (Logs)</h2>
         <div class="log-grid">
             <div class="log-section"><h4>1. لوقات القبول</h4><div class="log-box" id="L1"></div></div>
+            <div class="log-section"><h4>2. لوقات التصحيح</h4><div class="log-box" id="L2"></div></div>
             <div class="log-section"><h4>3. لوقات الدخول</h4><div class="log-box" id="L3"></div></div>
+            <div class="log-section"><h4>4. لوقات الإجابات</h4><div class="log-box" id="L4"></div></div>
             <div class="log-section"><h4>5. لوقات المشرفين</h4><div class="log-box" id="L5"></div></div>
-            <div class="log-section"><h4>9. لوقات مركز اللوقات</h4><div class="log-box" id="L9"></div></div>
+            <div class="log-section"><h4>6. لوقات الإدارة</h4><div class="log-box" id="L6"></div></div>
+            <div class="log-section"><h4>7. لوقات التقارير</h4><div class="log-box" id="L7"></div></div>
+            <div class="log-section"><h4>8. لوقات النتائج</h4><div class="log-box" id="L8"></div></div>
+            <div class="log-section"><h4>9. لوقات النظام</h4><div class="log-box" id="L9"></div></div>
+            <div class="log-section"><h4>10. لوقات التعديلات</h4><div class="log-box" id="L10"></div></div>
         </div>
     </div>
 
-    <div style="text-align: center; margin-top: 50px; color: #333;">
-        حقوق _ دولة مارفل | هيئة تنظيم الدورات العسكرية
+    <script>
+        // إظهار حقل الباسورد عند اختيار مشرف/لوقات
+        document.getElementById('in-role').addEventListener('change', function() {
+            document.getElementById('pass-div').classList.toggle('hidden', this.value === 'متدرب');
+        });
+    </script>
+
+    <div style="text-align: center; margin-top: 40px; color: #222; font-size: 12px;">
+        نظام مارفل الموحد | هيئة تنظيم الدورات العسكرية
     </div>
 </body>
 </html>
