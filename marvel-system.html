@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام مارفل العسكري | النسخة السحابية</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // إعدادات Firebase الخاصة بك (من الصورة)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
+            authDomain: "mmca-authority.firebaseapp.com",
+            databaseURL: "https://mmca-authority-default-rtdb.firebaseio.com",
+            projectId: "mmca-authority",
+            storageBucket: "mmca-authority.firebasestorage.app",
+            messagingSenderId: "105278081999",
+            appId: "1:105278081999:web:b24e7fc8aba9aaf76ca0ba",
+            measurementId: "G-F42TJTC95C"
+        };
+
+        // تهيئة Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // متغيرات الجلسة
+        let currentUser = null;
+
+        // --- وظيفة تسجيل اللوقات (إرسال لـ Firebase) ---
+        window.writeLog = function(logNum, message) {
+            const logRef = ref(db, 'logs/L' + logNum);
+            const newLogRef = push(logRef);
+            set(newLogRef, {
+                msg: message,
+                id: document.getElementById('in-id').value || "غير معروف",
+                time: new Date().toLocaleString('ar-EG'),
+                role: document.getElementById('in-role').value
+            });
+        };
+
+        // --- نظام الدخول والتحقق ---
+        window.validateAndLogin = function() {
+            const id = document.getElementById('in-id').value;
+            const name = document.getElementById('in-name').value;
+            const role = document.getElementById('in-role').value;
+            const pass = document.getElementById('in-pass').value;
+
+            if(!id || !name) return alert("أكمل البيانات!");
+            if(role !== 'متدرب' && pass !== '2121') return alert("كلمة المرور خطأ!");
+
+            currentUser = { id, name, role };
+            
+            if(role === 'متدرب') {
+                switchPage('page-student');
+                writeLog(3, `دخل المتدرب ${name} وبدأ الانتظار`);
+                // إرسال طلب القبول لـ Firebase
+                set(ref(db, 'requests/' + id), { name, id, status: 'waiting' });
+                
+                // مراقبة حالة القبول مباشرة من قاعدة البيانات
+                onValue(ref(db, 'requests/' + id), (snapshot) => {
+                    if (snapshot.val() && snapshot.val().status === 'accepted') {
+                        startOfficialExam();
+                    }
+                });
+            } else {
+                switchPage(role === 'مشرف' ? 'page-admin' : 'page-logs');
+                writeLog(5, `المشرف ${name} سجل دخوله`);
+                listenToRequests(); // البدء بمراقبة الطلبات
+                listenToLogs();     // البدء بمراقبة اللوقات
+            }
+        };
+
+        // --- وظائف الإدارة (تعديل مباشر في Firebase) ---
+        function listenToRequests() {
+            onValue(ref(db, 'requests'), (snapshot) => {
+                const table = document.getElementById('table-req');
+                table.innerHTML = "";
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    if(data.status === 'waiting') {
+                        table.innerHTML += `<tr><td>${data.name}</td><td>${data.id}</td>
+                            <td><button class="btn" onclick="adminAction('${data.id}', 'accepted')">قبول</button></td></tr>`;
+                    }
+                });
+            });
+        }
+
+        window.adminAction = function(uid, status) {
+            update(ref(db, 'requests/' + uid), { status: status });
+            writeLog(1, `تم ${status === 'accepted' ? 'قبول' : 'رفض'} المتدرب ${uid}`);
+        };
+
+        // --- عرض اللوقات العشرة مباشرة ---
+        function listenToLogs() {
+            for(let i=1; i<=10; i++) {
+                onValue(ref(db, 'logs/L'+i), (snapshot) => {
+                    const box = document.getElementById('L'+i);
+                    box.innerHTML = "";
+                    snapshot.forEach((log) => {
+                        const d = log.val();
+                        box.innerHTML = `<div>[${d.time}] ${d.msg} (ID: ${d.id})</div>` + box.innerHTML;
+                    });
+                });
+            }
+        }
+
+        // أدوات المساعدة للصفحات
+        window.switchPage = (id) => {
+            document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
+    </script>
+
+    <style>
+        :root { --p: #1a3a5f; --a: #3498db; --bg: #050a10; --card: #0e1a2e; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; direction: rtl; }
+        .container { max-width: 1000px; margin: 20px auto; background: var(--card); padding: 20px; border-radius: 10px; }
+        .hidden { display: none !important; }
+        .btn { background: var(--p); color: #fff; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; background: #000; color: #fff; border: 1px solid #333; }
+        .log-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .log-box { height: 150px; overflow-y: auto; background: #000; border: 1px solid #222; font-family: monospace; font-size: 11px; padding: 5px; color: #00ff00; }
+    </style>
+</head>
+<body>
+
+    <div id="page-auth" class="container">
+        <h2>نظام مارفل - الربط السحابي</h2>
+        <input type="text" id="in-id" placeholder="أيدي الديسكورد">
+        <input type="text" id="in-name" placeholder="الاسم الكامل">
+        <select id="in-role">
+            <option value="متدرب">متدرب</option>
+            <option value="مشرف">مشرف (2121)</option>
+            <option value="لوقات">لوقات (2121)</option>
+        </select>
+        <input type="password" id="in-pass" placeholder="الباسورد للمشرفين">
+        <button class="btn" onclick="validateAndLogin()">دخول</button>
+    </div>
+
+    <div id="page-student" class="container hidden">
+        <h3 id="wait-msg">أهلاً بك.. طلبك معلق الآن، انتظر قبول المشرف لفتح الاختبار تلقائياً.</h3>
+    </div>
+
+    <div id="page-admin" class="container hidden">
+        <h3>طلبات القبول المباشرة (Firebase)</h3>
+        <table>
+            <thead><tr><th>الاسم</th><th>الأيدي</th><th>الإجراء</th></tr></thead>
+            <tbody id="table-req"></tbody>
+        </table>
+    </div>
+
+    <div id="page-logs" class="container hidden">
+        <h3>مركز اللوقات الشامل</h3>
+        <div class="log-grid">
+            <div class="log-section"><h4>1. لوقات القبول</h4><div class="log-box" id="L1"></div></div>
+            <div class="log-section"><h4>3. لوقات الدخول</h4><div class="log-box" id="L3"></div></div>
+            <div class="log-section"><h4>5. لوقات المشرفين</h4><div class="log-box" id="L5"></div></div>
+            <div class="log-section"><h4>9. لوقات مركز اللوقات</h4><div class="log-box" id="L9"></div></div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 50px; color: #333;">
+        حقوق _ دولة مارفل | هيئة تنظيم الدورات العسكرية
+    </div>
+</body>
+</html>
