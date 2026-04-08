@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مارفل | إدارة المحتوى والسجلات</title>
+    <title>نظام مارفل العسكري | النسخة الاحترافية</title>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -24,147 +24,226 @@
         const db = getDatabase(app);
         let currentUser = null;
 
-        // --- نظام إدارة الأسئلة (جديد) ---
-        window.saveQuestions = function() {
-            const q1 = document.getElementById('q1-text').value;
-            const q2 = document.getElementById('q2-text').value;
-            const q3 = document.getElementById('q3-text').value;
-
-            set(ref(db, 'exam_settings/questions'), {
-                question1: q1,
-                question2: q2,
-                question3: q3,
-                updatedBy: currentUser.name,
-                lastUpdate: new Date().toLocaleString('ar-EG')
-            }).then(() => {
-                alert("تم تحديث الأسئلة العسكرية بنجاح في السحاب!");
-                window.writeLog(10, `قام المسؤول ${currentUser.name} بتغيير نص الأسئلة.`);
-            });
-        };
-
-        // --- تحميل الأسئلة للمتدرب تلقائياً ---
-        function loadQuestionsForStudent() {
-            onValue(ref(db, 'exam_settings/questions'), (snap) => {
-                const data = snap.val();
-                if(data) {
-                    document.getElementById('display-q1').innerText = data.question1;
-                    document.getElementById('display-q2').innerText = data.question2;
-                    document.getElementById('display-q3').innerText = data.question3;
-                }
-            });
-        }
-
-        window.writeLog = function(logNum, message) {
+        // --- محرك اللوقات المركزية ---
+        window.writeLog = (logNum, message) => {
             push(ref(db, `logs/L${logNum}`), {
-                msg: message, user: currentUser ? currentUser.name : "نظام", time: new Date().toLocaleTimeString('ar-EG')
+                msg: message,
+                user: currentUser ? currentUser.name : "System",
+                time: new Date().toLocaleTimeString('ar-EG')
             });
         };
 
-        window.validateAndLogin = function() {
+        // --- نظام تسجيل الدخول الموحد ---
+        window.validateAndLogin = () => {
             const id = document.getElementById('in-id').value;
             const name = document.getElementById('in-name').value;
             const role = document.getElementById('in-role').value;
             const pass = document.getElementById('in-pass').value;
 
-            if(!id || !name) return alert("أكمل البيانات!");
-            if(role !== 'متدرب' && pass !== '2121') return alert("باسورد خطأ!");
+            if(!id || !name) return alert("⚠️ تنبيه: يرجى إدخال كافة البيانات العسكرية.");
+            if(role !== 'متدرب' && pass !== '2121') return alert("❌ خطأ: كلمة المرور غير مصرح بها.");
 
             currentUser = { id, name, role };
+            
             if(role === 'متدرب') {
-                showPage('page-student');
-                loadQuestionsForStudent();
-                set(ref(db, 'requests/' + id), { name, id, status: 'waiting' });
+                switchPage('page-student');
+                writeLog(3, `سجل المتدرب ${name} دخوله وهو بانتظار القبول.`);
+                set(ref(db, 'requests/' + id), { name, id, status: 'waiting', timestamp: Date.now() });
+                
+                // الاستماع للحالة والأسئلة
                 onValue(ref(db, 'requests/' + id), (snap) => {
                     if(snap.val()?.status === 'accepted') {
-                        document.getElementById('st-waiting').classList.add('hidden');
+                        document.getElementById('st-waiting-area').classList.add('hidden');
                         document.getElementById('st-exam-area').classList.remove('hidden');
+                        loadLiveQuestions();
                     }
                 });
             } else {
-                showPage(role === 'مشرف' ? 'page-admin' : 'page-logs');
-                if(role === 'لوقات') initLogsLogic();
+                switchPage(role === 'مشرف' ? 'page-admin' : 'page-logs');
+                role === 'مشرف' ? initAdmin() : initLogs();
+                writeLog(5, `قام المسؤول ${name} بالولوج إلى لوحة التحكم.`);
             }
         };
 
-        function initLogsLogic() {
-            for(let i=1; i<=10; i++) {
-                onValue(ref(db, `logs/L${i}`), (snap) => {
-                    const box = document.getElementById(`L${i}`);
-                    box.innerHTML = "";
-                    snap.forEach(l => { box.innerHTML = `<div>[${l.val().time}] ${l.val().msg}</div>` + box.innerHTML; });
-                });
-            }
+        // --- إدارة الأسئلة الحية ---
+        window.updateQuestions = () => {
+            const qs = {
+                q1: document.getElementById('edit-q1').value,
+                q2: document.getElementById('edit-q2').value,
+                q3: document.getElementById('edit-q3').value
+            };
+            set(ref(db, 'settings/exam_questions'), qs).then(() => {
+                alert("✅ تم تحديث الأسئلة ونشرها للمتدربين فوراً.");
+                writeLog(10, `تم تعديل الأسئلة الاختبارية بواسطة ${currentUser.name}`);
+            });
+        };
+
+        function loadLiveQuestions() {
+            onValue(ref(db, 'settings/exam_questions'), (snap) => {
+                const data = snap.val();
+                if(data) {
+                    document.getElementById('q1-label').innerText = data.q1;
+                    document.getElementById('q2-label').innerText = data.q2;
+                    document.getElementById('q3-label').innerText = data.q3;
+                }
+            });
         }
 
-        window.showPage = (id) => {
+        // --- إدارة الطلبات (مشرف) ---
+        function initAdmin() {
+            onValue(ref(db, 'requests'), (snap) => {
+                const container = document.getElementById('requests-list');
+                container.innerHTML = "";
+                snap.forEach(child => {
+                    const u = child.val();
+                    if(u.status === 'waiting') {
+                        container.innerHTML += `
+                        <div class="military-card">
+                            <div class="info">
+                                <span class="badge">طلب جديد</span>
+                                <strong>${u.name}</strong> <small>(ID: ${u.id})</small>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-approve" onclick="actionUser('${u.id}', 'accepted')">قـبـول</button>
+                                <button class="btn-reject" onclick="actionUser('${u.id}', 'rejected')">رفـض</button>
+                            </div>
+                        </div>`;
+                    }
+                });
+            });
+        }
+
+        window.actionUser = (uid, status) => {
+            update(ref(db, 'requests/' + uid), { status: status });
+            writeLog(1, `تم اتخاذ قرار [${status === 'accepted' ? 'قبول' : 'رفض'}] بحق الأيدي: ${uid}`);
+        };
+
+        // --- عرض السجلات (لوقات) ---
+        function initLogs() {
+            const logIds = [1, 3, 5, 10];
+            logIds.forEach(id => {
+                onValue(ref(db, `logs/L${id}`), (snap) => {
+                    const box = document.getElementById(`log-box-${id}`);
+                    box.innerHTML = "";
+                    snap.forEach(l => {
+                        box.innerHTML = `<div class="log-entry"><span class="time">${l.val().time}</span> ${l.val().msg}</div>` + box.innerHTML;
+                    });
+                });
+            });
+        }
+
+        window.switchPage = (id) => {
             document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+        };
+
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
         };
     </script>
 
     <style>
-        :root { --p: #1a3a5f; --a: #3498db; --bg: #050a10; --card: #0e1a2e; --s: #27ae60; --d: #c0392b; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; direction: rtl; margin: 0; }
-        .container { max-width: 1000px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid #1f2d3d; }
+        :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --bg: #0b0f19; --card-bg: #161c2d; --text: #e9ecef; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; direction: rtl; }
+        .container { max-width: 900px; margin: 40px auto; background: var(--card-bg); padding: 35px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid #2d3748; }
         .hidden { display: none !important; }
-        .btn { background: var(--p); color: #fff; border: none; padding: 12px; cursor: pointer; border-radius: 5px; width: 100%; font-weight: bold; }
-        .log-box { height: 120px; overflow-y: auto; background: #000; color: #00ff41; padding: 10px; font-family: monospace; font-size: 11px; border: 1px solid #222; margin-bottom: 10px; }
-        .editor-section { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border-left: 5px solid var(--s); margin-bottom: 30px; }
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; background: #000; color: #fff; border: 1px solid #333; border-radius: 5px; box-sizing: border-box; }
-        h4 { margin-bottom: 5px; color: var(--a); }
+        
+        /* تصميم المدخلات */
+        input, select, textarea { width: 100%; padding: 14px; margin: 12px 0; background: #0d1117; color: white; border: 1px solid #30363d; border-radius: 8px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 8px rgba(0,123,255,0.2); }
+
+        /* الأزرار الاحترافية */
+        .btn-main { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .btn-main:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        
+        /* بطاقات المشرف */
+        .military-card { background: #1c2539; padding: 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-right: 5px solid var(--primary); }
+        .badge { background: var(--primary); font-size: 10px; padding: 3px 8px; border-radius: 4px; margin-left: 10px; }
+        .btn-approve { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-left: 10px; }
+        .btn-reject { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+
+        /* التبويبات */
+        .tabs-header { display: flex; gap: 10px; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .tab-btn { background: transparent; border: 1px solid #333; color: #aaa; padding: 8px 18px; border-radius: 6px; cursor: pointer; }
+        .tab-btn:hover { background: #333; color: white; }
+
+        /* اللوقات */
+        .log-container { background: #000; border-radius: 8px; padding: 15px; height: 150px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; border: 1px solid #222; margin-top: 10px; }
+        .log-entry { margin-bottom: 5px; color: #00ff41; border-bottom: 1px solid #111; padding-bottom: 2px; }
+        .time { color: #888; margin-left: 10px; }
+
+        h2, h3 { color: var(--primary); margin-top: 0; }
     </style>
 </head>
 <body>
 
     <div id="page-auth" class="container">
-        <h2 style="text-align: center;">نظام مارفل - التحكم المركزي</h2>
-        <input type="text" id="in-id" placeholder="أيدي الديسكورد">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="margin:0; color:var(--primary)">MARVEL</h1>
+            <p style="color: #666; letter-spacing: 2px;">نظام إدارة العمليات والتدريب</p>
+        </div>
+        <input type="text" id="in-id" placeholder="أيدي المستخدم (Discord ID)">
         <input type="text" id="in-name" placeholder="الاسم الكامل">
-        <select id="in-role" onchange="document.getElementById('p-div').classList.toggle('hidden', this.value==='متدرب')">
-            <option value="متدرب">متدرب</option>
-            <option value="مشرف">مشرف</option>
-            <option value="لوقات">مسؤول سجلات/أسئلة</option>
+        <select id="in-role" onchange="document.getElementById('pass-field').classList.toggle('hidden', this.value==='متدرب')">
+            <option value="متدرب">دخول متدرب</option>
+            <option value="مشرف">دخول رتبة - مشرف</option>
+            <option value="لوقات">دخول هيئة الرقابة - لوقات</option>
         </select>
-        <div id="p-div" class="hidden"><input type="password" id="in-pass" placeholder="الباسورد"></div>
-        <button class="btn" onclick="validateAndLogin()">دخول النظام</button>
+        <div id="pass-field" class="hidden"><input type="password" id="in-pass" placeholder="كلمة مرور الصلاحية"></div>
+        <button class="btn-main" onclick="validateAndLogin()">دخول النظام</button>
     </div>
 
     <div id="page-student" class="container hidden">
-        <div id="st-waiting" style="text-align:center;"><h3>انتظار القبول...</h3></div>
+        <div id="st-waiting-area" style="text-align: center; padding: 40px;">
+            <div style="font-size: 50px;">⏳</div>
+            <h3>جاري معالجة طلبك أمنياً...</h3>
+            <p>سيتم تفعيل الاختبار تلقائياً عند صدور موافقة المشرف.</p>
+        </div>
         <div id="st-exam-area" class="hidden">
-            <h2 style="color:var(--a)">بدء الاختبار الرسمي</h2>
-            <div class="editor-section">
-                <h4 id="display-q1">جاري تحميل السؤال...</h4>
-                <textarea placeholder="اكتب إجابتك هنا..."></textarea>
-                <h4 id="display-q2">جاري تحميل السؤال...</h4>
-                <textarea placeholder="اكتب إجابتك هنا..."></textarea>
-                <h4 id="display-q3">جاري تحميل السؤال...</h4>
-                <textarea placeholder="اكتب إجابتك هنا..."></textarea>
+            <h2 style="border-right: 4px solid var(--success); padding-right: 15px;">الاختبار الرسمي للدورة</h2>
+            <div style="margin-top: 20px;">
+                <h4 id="q1-label">جاري تحميل السؤال الأول...</h4>
+                <textarea rows="3" placeholder="الإجابة..."></textarea>
+                <h4 id="q2-label">جاري تحميل السؤال الثاني...</h4>
+                <textarea rows="3" placeholder="الإجابة..."></textarea>
+                <h4 id="q3-label">جاري تحميل السؤال الثالث...</h4>
+                <textarea rows="3" placeholder="الإجابة..."></textarea>
             </div>
-            <button class="btn" style="background:var(--s)" onclick="alert('تم الحفظ')">تسليم الاختبار</button>
+            <button class="btn-main" style="background:var(--success)" onclick="alert('تم التسليم')">تسليم الإجابات النهائية</button>
+        </div>
+    </div>
+
+    <div id="page-admin" class="container hidden">
+        <div class="tabs-header">
+            <button class="tab-btn" onclick="switchTab('tab-requests')">طلبات القبول</button>
+            <button class="tab-btn" onclick="switchTab('tab-grading')">التصحيح</button>
+        </div>
+        <div id="tab-requests" class="admin-tab-content">
+            <h3>الطلبات المعلقة</h3>
+            <div id="requests-list"></div>
+        </div>
+        <div id="tab-grading" class="admin-tab-content hidden">
+            <p style="text-align:center; color:#555;">لا يوجد إجابات تحتاج تصحيح حالياً.</p>
         </div>
     </div>
 
     <div id="page-logs" class="container hidden">
-        <h2 style="color:var(--s)">مركز إدارة المحتوى والسجلات</h2>
+        <h2>مركز الإدارة والرقابة</h2>
         
-        <div class="editor-section">
-            <h3>📝 لوحة كتابة الأسئلة (تظهر للمتدربين فوراً)</h3>
-            <h4>السؤال العسكري الأول:</h4>
-            <input type="text" id="q1-text" placeholder="اكتب السؤال الأول هنا...">
-            <h4>السؤال العسكري الثاني:</h4>
-            <input type="text" id="q2-text" placeholder="اكتب السؤال الثاني هنا...">
-            <h4>السؤال العسكري الثالث:</h4>
-            <input type="text" id="q3-text" placeholder="اكتب السؤال الثالث هنا...">
-            <button class="btn" style="background:var(--s); margin-top:10px;" onclick="saveQuestions()">تحديث الأسئلة في النظام</button>
+        <div style="background: #1a2234; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-top: 4px solid var(--success);">
+            <h3 style="color:var(--success); margin-bottom:15px;">⚙️ تعديل الأسئلة الحية</h3>
+            <input type="text" id="edit-q1" placeholder="السؤال الأول">
+            <input type="text" id="edit-q2" placeholder="السؤال الثاني">
+            <input type="text" id="edit-q3" placeholder="السؤال الثالث">
+            <button class="btn-main" style="background:var(--success)" onclick="updateQuestions()">تحديث الأسئلة فوراً</button>
         </div>
 
-        <h3>📁 السجلات الأمنية:</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div><h4>لوقات القبول</h4><div class="log-box" id="L1"></div></div>
-            <div><h4>لوقات الأسئلة</h4><div class="log-box" id="L10"></div></div>
-            <div><h4>لوقات الدخول</h4><div class="log-box" id="L3"></div></div>
-            <div><h4>لوقات المشرفين</h4><div class="log-box" id="L5"></div></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div><h4>لوقات القبول/الرفض</h4><div id="log-box-1" class="log-container"></div></div>
+            <div><h4>لوقات الدخول</h4><div id="log-box-3" class="log-container"></div></div>
+            <div><h4>لوقات الإدارة</h4><div id="log-box-5" class="log-container"></div></div>
+            <div><h4>تعديل الأسئلة</h4><div id="log-box-10" class="log-container"></div></div>
         </div>
     </div>
 
