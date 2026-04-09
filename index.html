@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة مارفل العسكرية 2026</title>
+    <title>منظومة مارفل العسكرية المتكاملة 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -29,24 +29,25 @@
         let currentQIndex = 0;
         let examTimer = null;
 
-        // نظام الحماية: منع التنقل اليدوي
+        // نظام الحماية الشامل لمنع الدخول اليدوي
         window.switchView = (id) => {
             if (!currentUser && id !== 'view-auth') {
-                id = 'view-auth'; // إجبار العودة للدخول
+                id = 'view-auth'; 
             }
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
+            const targetView = document.getElementById(id);
+            if(targetView) targetView.classList.remove('hidden');
+
             if(id === 'view-admin') initAdminPanel();
             if(id === 'view-logs') initLogsPanel();
         };
 
-        window.logAction = (channel, details, studentId = "-", extra = "-") => {
-            const time = new Date().toLocaleString('ar-EG');
-            const adminId = currentUser ? currentUser.id : "غير معروف";
-            let logMsg = ([10, 11].includes(channel)) 
-                ? `${time} | المشرف: ${adminId} | ${details} | ${extra}`
-                : `${time} | المشرف: ${adminId} | الطالب: ${studentId} | ${details} | ${extra}`;
-            push(ref(db, `logs/L${channel}`), { content: logMsg });
+        window.logAction = (channel, msg, uid = "غير معروف") => {
+            push(ref(db, `logs/L${channel}`), {
+                time: new Date().toLocaleString('ar-EG'),
+                discordId: uid,
+                details: msg
+            });
         };
 
         window.loginDiscord = () => {
@@ -57,9 +58,8 @@
             const params = new URLSearchParams(window.location.hash.slice(1));
             const token = params.get("access_token");
             
-            // جلب اسم الدورة فوراً
             onValue(ref(db, 'course_info'), s => { 
-                if(s.exists()) document.querySelectorAll('.c-name-display').forEach(el => el.innerText = s.val().name); 
+                if(s.exists()) document.querySelectorAll('.c-name-display').forEach(el => el.innerText = s.val().name);
             });
 
             if (token) {
@@ -70,22 +70,30 @@
                         window.history.replaceState({}, "", window.location.pathname);
                         document.getElementById('display-id').value = currentUser.id;
                         switchView('view-requirements');
-                        logAction(1, "سجل دخول", currentUser.id, "متصل");
+                        logAction(1, "سجل دخول للنظام", currentUser.id);
                     }
                 } catch (e) { switchView('view-auth'); }
-            } else { 
-                switchView('view-auth'); 
-            }
+            } else { switchView('view-auth'); }
         };
 
         window.submitReqs = () => {
             const name = document.getElementById('req-name').value;
             const code = document.getElementById('req-code').value;
             if (!name || !code) return alert("يرجى إكمال البيانات العسكرية!");
-            const data = { name, code, rank: document.getElementById('req-rank').value, age: document.getElementById('req-age').value, dId: currentUser.id, status: 'pending' };
+
+            const data = { 
+                name: name, 
+                code: code, 
+                rank: document.getElementById('req-rank').value, 
+                age: document.getElementById('req-age').value, 
+                dId: currentUser.id, 
+                status: 'pending' 
+            };
+            
             set(ref(db, `applications/${currentUser.id}`), data);
-            logAction(4, "تقديم طلب", currentUser.id, name);
+            logAction(4, `أرسل متطلباته العسكرية: ${name}`, currentUser.id);
             switchView('view-waiting');
+            
             onValue(ref(db, `applications/${currentUser.id}`), (snap) => { 
                 if (snap.val()?.status === 'accepted') startTheExam(); 
             });
@@ -95,10 +103,12 @@
             const snap = await get(ref(db, 'questions_bank'));
             examQuestions = []; 
             snap.forEach(q => examQuestions.push({id: q.key, ...q.val()}));
-            if (examQuestions.length === 0) return alert("لا توجد أسئلة متوفرة حالياً!");
+            
+            if (examQuestions.length === 0) return alert("لا توجد أسئلة متوفرة!");
+            
             currentQIndex = 0;
             switchView('view-exam');
-            logAction(5, "بدأ الاختبار", currentUser.id, "ميداني");
+            logAction(5, "بدأ الاختبار الميداني", currentUser.id);
             renderQuestion();
         }
 
@@ -106,97 +116,129 @@
             if (examTimer) clearInterval(examTimer);
             if (currentQIndex >= examQuestions.length) { 
                 switchView('view-congrats'); 
-                logAction(8, "أنهى الاختبار", currentUser.id, "ناجح"); 
+                logAction(8, "أنهى الاختبار بنجاح", currentUser.id);
                 return; 
             }
+
             const q = examQuestions[currentQIndex];
             const container = document.getElementById('q-container');
             let timeLeft = parseInt(q.duration) || 30;
+
             let html = `<h2 style="color:#5865f2;">سؤال ${currentQIndex + 1}: ${q.text}</h2>`;
             if (q.type === 'choice') {
-                q.options.forEach(opt => { html += `<label class="opt-card"><input type="radio" name="ans" value="${opt}"> ${opt}</label>`; });
-            } else { html += `<textarea id="essay-ans" class="inp" style="height:100px;"></textarea>`; }
+                q.options.forEach(opt => { 
+                    html += `<label class="opt-card"><input type="radio" name="ans" value="${opt}"> ${opt}</label>`; 
+                });
+            } else { 
+                html += `<textarea id="essay-ans" class="inp" style="height:100px;" placeholder="اكتب إجابتك هنا..."></textarea>`; 
+            }
+            
             container.innerHTML = html;
             document.getElementById('timer-display').innerText = timeLeft;
+
             examTimer = setInterval(() => {
                 timeLeft--;
                 document.getElementById('timer-display').innerText = timeLeft;
-                if (timeLeft <= 0) { clearInterval(examTimer); window.nextQuestion(); }
+                if (timeLeft <= 0) {
+                    clearInterval(examTimer);
+                    window.nextQuestion();
+                }
             }, 1000);
         }
 
         window.nextQuestion = () => {
             const q = examQuestions[currentQIndex];
             let userAns = "تجاوز الوقت";
+            
             if (q.type === 'choice') {
                 const selected = document.querySelector('input[name="ans"]:checked');
                 if (selected) userAns = selected.value;
             } else {
                 const textAns = document.getElementById('essay-ans');
-                if (textAns?.value) userAns = textAns.value;
+                if (textAns?.value.trim()) userAns = textAns.value;
             }
-            set(ref(db, `results/${currentUser.id}/${q.id}`), { q_text: q.text, answer: userAns, score: "", user: document.getElementById('req-name').value });
-            logAction(6, "إجابة سؤال", currentUser.id, userAns);
+
+            const name = document.getElementById('req-name').value;
+            set(ref(db, `results/${currentUser.id}/${q.id}`), { 
+                q_text: q.text, 
+                answer: userAns, 
+                score: "", 
+                user: name 
+            });
+
+            logAction(6, `أجاب على سؤال: ${userAns}`, currentUser.id);
             currentQIndex++;
             renderQuestion();
         };
 
         window.accessGate = (type) => {
-            const pass = prompt("رمز الدخول العسكري:");
+            if (!currentUser) return alert("سجل دخول أولاً!");
+            const pass = prompt("كلمة المرور العسكرية:");
             if (type === 'rights' && pass === '0101') switchView('view-admin');
             else if (type === 'marvel' && pass === '9999') switchView('view-logs');
-            else alert("تم رصد محاولة دخول غير مصرح بها!");
+            else alert("كلمة المرور خاطئة!");
         };
 
         function initAdminPanel() {
             onValue(ref(db, 'applications'), s => {
                 const b = document.getElementById('admin-req-list'); b.innerHTML = "";
-                s.forEach(c => { b.innerHTML += `<tr><td>${c.val().name}</td><td>${c.val().dId}</td><td>${c.val().status}</td><td><button onclick="updateApp('${c.key}','accepted')">قبول</button> <button onclick="updateApp('${c.key}','rejected')">رفض</button></td></tr>`; });
+                s.forEach(c => {
+                    const d = c.val();
+                    b.innerHTML += `<tr><td>${d.name}</td><td>${d.dId}</td><td>${d.status}</td><td><button onclick="updateApp('${c.key}','accepted')">قبول</button><button onclick="updateApp('${c.key}','rejected')">رفض</button></td></tr>`;
+                });
+            });
+            onValue(ref(db, 'results'), s => {
+                const b = document.getElementById('correction-list'); b.innerHTML = "";
+                s.forEach(u => { u.forEach(q => {
+                    const r = q.val();
+                    b.innerHTML += `<tr><td>${r.user}</td><td>${r.q_text}</td><td>${r.answer}</td><td><button onclick="setGrade('${u.key}','${q.key}',1)">1</button><button onclick="setGrade('${u.key}','${q.key}',0)">0</button></td></tr>`;
+                });});
             });
         }
 
         function initLogsPanel() {
-            onValue(ref(db, 'questions_bank'), s => {
-                const b = document.getElementById('logs-manage-qs'); b.innerHTML = "";
-                s.forEach(q => { b.innerHTML += `<tr><td>${q.val().text}</td><td><button style="background:red" onclick="delData('questions_bank/${q.key}')">حذف</button></td></tr>`; });
-            });
+            onValue(ref(db, 'course_info'), s => { if(s.exists()) document.getElementById('course-input').value = s.val().name; });
             for(let i=1; i<=12; i++) {
                 onValue(ref(db, `logs/L${i}`), snap => {
                     const box = document.getElementById(`log-box-${i}`); box.innerHTML = "";
-                    snap.forEach(l => { box.innerHTML = `<div class="log-entry">${l.val().content}</div>` + box.innerHTML; });
+                    snap.forEach(l => { box.innerHTML = `<div class="log-entry">${l.val().time} | ID: ${l.val().discordId} | ${l.val().details}</div>` + box.innerHTML; });
                 });
             }
         }
 
-        window.updateApp = (id, st) => { update(ref(db, `applications/${id}`), {status: st}); logAction(4, "تحديث حالة", id, st); };
-        window.saveCourse = () => { const v = document.getElementById('course-input').value; set(ref(db, 'course_info'), { name: v }); logAction(10, "تعديل قسم", "-", v); };
-        window.delData = (path) => { if(confirm("تأكيد الحذف؟")) { remove(ref(db, path)); logAction(11, "حذف", "-", path); } };
+        window.updateApp = (id, st) => { update(ref(db, `applications/${id}`), {status: st}); logAction(4, `تحديث حالة لـ ${st}`, currentUser.id); };
+        window.setGrade = (u, q, g) => { update(ref(db, `results/${u}/${q}`), {score: g}); logAction(7, `تصحيح إجابة: ${g}`, currentUser.id); };
+        window.saveCourse = () => { set(ref(db, 'course_info'), { name: document.getElementById('course-input').value }); logAction(10, "تعديل اسم الدورة", currentUser.id); };
+        
         window.addQ = () => {
-            const txt = prompt("السؤال:");
-            const type = confirm("موافق=خيارات") ? "choice" : "essay";
-            const dur = prompt("الثواني:");
-            let opts = [];
-            if(type==='choice') opts = prompt("الخيارات بـ (+) :").split("+").map(o=>o.trim());
-            push(ref(db, 'questions_bank'), { text: txt, type: type, duration: dur, options: opts });
-            logAction(11, "إضافة سؤال", "-", txt);
+            const t = prompt("نص السؤال:");
+            const ty = confirm("موافق = خيارات | إلغاء = مقالي") ? "choice" : "essay";
+            const d = prompt("المدة بالثواني:");
+            let o = [];
+            if(ty === 'choice') {
+                const raw = prompt("أدخل الخيارات وافصل بينها بعلامة (+):");
+                if(raw) o = raw.split("+").map(item => item.trim()).filter(item => item !== "");
+            }
+            push(ref(db, 'questions_bank'), { text: t, type: ty, duration: d, options: o });
+            logAction(11, "إضافة سؤال جديد", currentUser.id);
         };
     </script>
     <style>
         :root { --discord: #5865f2; --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; direction: rtl; margin: 0; overflow-x: hidden; }
-        .view { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        body { background: var(--bg); color: var(--text); font-family: 'Cairo', sans-serif; direction: rtl; margin: 0; }
+        .view { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
         .hidden { display: none !important; }
         .card { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 15px; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 12px; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 8px; margin: 10px 0; font-family: 'Cairo'; box-sizing: border-box; }
-        button { background: var(--discord); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; margin-top: 10px; }
+        button { background: var(--discord); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; transition: 0.2s; }
         button:hover { opacity: 0.8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #010409; font-size: 12px; }
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: center; }
+        .log-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; width: 100%; }
+        .log-box { height: 100px; overflow-y: auto; background: #000; color: #39ff14; font-family: monospace; font-size: 9px; padding: 5px; border: 1px solid #333; text-align: left; }
         .timer-box { font-size: 24px; color: #f85149; border: 2px solid #f85149; padding: 10px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
         .opt-card { display: block; background: #21262d; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); text-align: right; cursor: pointer; }
-        .log-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 900px; margin-top: 20px; }
-        .log-box { height: 100px; overflow-y: auto; background: #000; color: #39ff14; font-size: 9px; padding: 5px; border: 1px solid #333; text-align: left; font-family: monospace; }
-        .footer { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #222; font-size: 11px; }
-        h1 { margin: 0; font-size: 28px; }
-        h3 { color: #8b949e; margin-bottom: 25px; font-weight: normal; }
+        .footer { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #222; font-size: 11px; z-index: 100; }
         .course-badge { background: #238636; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
@@ -204,16 +246,16 @@
 
     <div id="view-auth" class="view">
         <div class="card">
-            <div class="course-badge">الدورة المتاحة: <span class="c-name-display">جاري التحميل...</span></div>
-            <h1>دولة مارفل</h1>
-            <h3>النظام الموحد للاختبارات الإلكترونية<br>الدورات العسكرية</h3>
+            <div class="course-badge">الدورة المتاحة: <span class="c-name-display">...</span></div>
+            <h1 style="margin:0;">دولة مارفل</h1>
+            <p style="color: #8b949e; margin-bottom: 25px;">النظام الموحد للاختبارات الإلكترونية<br>الدورات العسكرية</p>
             <button onclick="loginDiscord()">تسجيل الدخول عبر DISCORD</button>
         </div>
     </div>
 
     <div id="view-requirements" class="view hidden">
         <div class="card">
-            <h2>تعبئة البيانات العسكرية</h2>
+            <h2>البيانات العسكرية</h2>
             <input type="text" id="display-id" class="inp" readonly>
             <input type="text" id="req-name" class="inp" placeholder="الاسم العسكري">
             <input type="text" id="req-code" class="inp" placeholder="الكود العسكري">
@@ -224,49 +266,62 @@
     </div>
 
     <div id="view-waiting" class="view hidden">
-        <div class="card"><h2>بانتظار موافقة المشرف...</h2><p>سيتم تحويلك للاختبار تلقائياً عند القبول</p></div>
+        <div class="card">
+            <h2 style="color:#e3b341;">بانتظار الموافقة العسكرية...</h2>
+            <p>سيتم تفعيل الاختبار لك تلقائياً عند قبول طلبك.</p>
+        </div>
     </div>
 
     <div id="view-exam" class="view hidden">
         <div class="card" style="max-width: 600px;">
-            <div class="timer-box">الوقت المتبقي: <span id="timer-display">--</span></div>
+            <div class="timer-box">المتبقي: <span id="timer-display">--</span> ثانية</div>
             <div id="q-container"></div>
-            <button onclick="nextQuestion()" style="background:#238636;">إرسال الإجابة والانتقال</button>
+            <button onclick="nextQuestion()" style="background:#238636;">تأكيد الإجابة والانتقال</button>
         </div>
     </div>
 
     <div id="view-congrats" class="view hidden">
-        <div class="card"><h2>شكراً لك!</h2><p>تم رفع إجاباتك بنجاح لنظام مارفل</p><button onclick="location.reload()">خروج</button></div>
+        <div class="card">
+            <h2 style="color: #3fb950;">تم إنهاء الاختبار</h2>
+            <p>تم حفظ الإجابات في السجلات العسكرية بنجاح.</p>
+            <button onclick="location.reload()">العودة للرئيسية</button>
+        </div>
     </div>
 
     <div id="view-admin" class="view hidden">
         <div class="card" style="max-width: 800px;">
-            <h2>لوحة إدارة المشرفين (0101)</h2>
-            <table style="width:100%; font-size: 12px; border-collapse: collapse;">
-                <thead><tr style="border-bottom: 1px solid #333;"><th>الاسم</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <h3>إدارة الطلبات والتصحيح (0101)</h3>
+            <table>
+                <thead><tr><th>الاسم</th><th>الأيدي</th><th>الحالة</th><th>إجراء</th></tr></thead>
                 <tbody id="admin-req-list"></tbody>
             </table>
-            <button onclick="location.reload()" style="margin-top:20px; background:#444;">إغلاق</button>
+            <table>
+                <thead><tr><th>الطالب</th><th>السؤال</th><th>الإجابة</th><th>الدرجة</th></tr></thead>
+                <tbody id="correction-list"></tbody>
+            </table>
+            <button onclick="location.reload()" style="background:#444;">خروج</button>
         </div>
     </div>
 
     <div id="view-logs" class="view hidden">
-        <div class="card" style="max-width: 950px;">
-            <h2>الإدارة العليا (9999)</h2>
-            <input type="text" id="course-input" class="inp" placeholder="تغيير اسم الدورة">
-            <button onclick="saveCourse()" style="background:#238636;">تحديث الاسم</button>
-            <button onclick="addQ()" style="background:#a371f7;">+ إضافة سؤال</button>
+        <div class="card" style="max-width: 900px;">
+            <h3>الإدارة العليا واللوقات (9999)</h3>
+            <input type="text" id="course-input" class="inp" placeholder="اسم الدورة">
+            <button onclick="saveCourse()" style="background:#238636;">تحديث الدورة</button>
+            <button onclick="addQ()" style="background:#a371f7;">+ إضافة سؤال (استخدم + للفصل)</button>
             
             <div class="log-grid">
-                <div><small>لوق الدخول</small><div id="log-box-1" class="log-box"></div></div>
-                <div><small>لوق القبول</small><div id="log-box-4" class="log-box"></div></div>
-                <div><small>لوق الإجابات</small><div id="log-box-6" class="log-box"></div></div>
-                <div><small>لوق الإضافات</small><div id="log-box-11" class="log-box"></div></div>
+                <div><small>1. الدخول</small><div id="log-box-1" class="log-box"></div></div>
+                <div><small>4. القبول</small><div id="log-box-4" class="log-box"></div></div>
+                <div><small>6. الإجابات</small><div id="log-box-6" class="log-box"></div></div>
+                <div><small>11. التعديلات</small><div id="log-box-11" class="log-box"></div></div>
             </div>
-            <button onclick="location.reload()" style="margin-top:20px; background:#444;">إغلاق</button>
+            <button onclick="location.reload()" style="background:#444;">إغلاق</button>
         </div>
     </div>
 
-    <div class="footer">© حقوق <span onclick="accessGate('rights')">دولة</span> مارفل <span onclick="accessGate('marvel')">العسكرية</span> 2026</div>
+    <div class="footer">
+        © <span style="cursor:pointer" onclick="accessGate('rights')">حقوق</span> دولة <span style="cursor:pointer" onclick="accessGate('marvel')">مارفل</span> 2026
+    </div>
 </body>
 </html>
