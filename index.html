@@ -9,6 +9,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, get, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // إعدادات Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
             authDomain: "mmca-authority.firebaseapp.com",
@@ -29,20 +30,16 @@
         let currentQIndex = 0;
         let examTimer;
 
-        // --- نظام اللوقات المطور حسب طلبك ---
+        // --- نظام اللوقات المطور ---
         window.logAction = (channel, details, studentId = "-", extra = "-") => {
             const time = new Date().toLocaleString('ar-EG');
             const adminId = currentUser ? currentUser.id : "غير معروف";
-            
             let logMsg = "";
             if([10, 11].includes(channel)) {
-                // لوق الإضافات والأقسام
                 logMsg = `${time} | المشرف: ${adminId} | ${details} | ${extra}`;
             } else {
-                // لوق العمليات (طلبات، أسئلة، إجابات، تصحيح)
                 logMsg = `${time} | المشرف: ${adminId} | الطالب: ${studentId} | ${details} | ${extra}`;
             }
-
             push(ref(db, `logs/L${channel}`), { content: logMsg });
         };
 
@@ -78,7 +75,6 @@
             });
         };
 
-        // --- نظام الاختبار ---
         window.submitReqs = () => {
             const name = document.getElementById('req-name').value;
             const code = document.getElementById('req-code').value;
@@ -96,7 +92,7 @@
             if (examQuestions.length === 0) return alert("لا توجد أسئلة!");
             currentQIndex = 0;
             switchView('view-exam');
-            logAction(5, "بدأ الاختبار الميداني", currentUser.id, "دخول");
+            logAction(5, "بدأ الاختبار", currentUser.id, "دخول");
             renderQuestion();
         }
 
@@ -126,7 +122,6 @@
             currentQIndex++; renderQuestion();
         };
 
-        // --- بوابات الإدارة ---
         window.accessGate = (type) => {
             const pass = prompt("كلمة المرور:");
             if (type === 'rights' && pass === '0101') { switchView('view-admin'); logAction(2, "دخل لوحة المشرفين", "-"); }
@@ -134,7 +129,6 @@
             else { alert("خطأ!"); logAction(3, "محاولة تلاعب", currentUser?.id); }
         };
 
-        // --- لوحة المشرفين (بدون حذف) ---
         function initAdminPanel() {
             onValue(ref(db, 'applications'), s => {
                 const b = document.getElementById('admin-req-list'); b.innerHTML = "";
@@ -146,29 +140,20 @@
             });
         }
 
-        // --- لوحة اللوقات (مع الإدارة الكاملة والحذف) ---
         function initLogsPanel() {
             onValue(ref(db, 'course_info'), s => { if(s.exists()) document.getElementById('course-input').value = s.val().name; });
-            
-            // إدارة الأسئلة (حذف وتعديل)
             onValue(ref(db, 'questions_bank'), s => {
                 const b = document.getElementById('logs-manage-qs'); b.innerHTML = "";
                 s.forEach(q => { b.innerHTML += `<tr><td>${q.val().text}</td><td>${q.val().type}</td><td><button style="background:red" onclick="delData('questions_bank/${q.key}')">حذف</button></td></tr>`; });
             });
-
-            // إدارة الطلبات (حذف)
             onValue(ref(db, 'applications'), s => {
                 const b = document.getElementById('logs-manage-apps'); b.innerHTML = "";
                 s.forEach(c => { b.innerHTML += `<tr><td>${c.val().name}</td><td>${c.val().dId}</td><td><button style="background:red" onclick="delData('applications/${c.key}')">حذف</button></td></tr>`; });
             });
-
-            // إدارة الإجابات (حذف)
             onValue(ref(db, 'results'), s => {
                 const b = document.getElementById('logs-manage-results'); b.innerHTML = "";
                 s.forEach(u => { u.forEach(q => { b.innerHTML += `<tr><td>${q.val().user}</td><td>${q.val().q_text}</td><td><button style="background:red" onclick="delData('results/${u.key}/${q.key}')">حذف</button></td></tr>`; });});
             });
-
-            // عرض اللوقات الـ 12
             for(let i=1; i<=12; i++) {
                 onValue(ref(db, `logs/L${i}`), snap => {
                     const box = document.getElementById(`log-box-${i}`); box.innerHTML = "";
@@ -182,13 +167,17 @@
         window.saveCourse = () => { const val = document.getElementById('course-input').value; set(ref(db, 'course_info'), { name: val }); logAction(10, "تعديل القسم", "-", val); };
         window.delData = (path) => { if(confirm("حذف نهائي؟")) { remove(ref(db, path)); logAction(11, "حذف بيانات", "-", path); } };
         
+        // --- تعديل الإضافة ليستخدم (+) ---
         window.addQ = () => {
             const txt = prompt("نص السؤال:");
             const type = confirm("موافق = خيارات | إلغاء = مقالي") ? "choice" : "essay";
             const dur = prompt("مدة السؤال بالثواني:");
             let opts = [];
-            if(type === 'choice') opts = prompt("ادخل الخيارات وافصل بينها بـ (،):").split("،");
-            
+            if(type === 'choice') {
+                // تقسيم المدخلات بناء على علامة الزائد وتنظيف المسافات
+                const rawOpts = prompt("ادخل الخيارات وافصل بينها بـ (+):");
+                opts = rawOpts.split("+").map(o => o.trim()).filter(o => o !== "");
+            }
             const qRef = push(ref(db, 'questions_bank'));
             set(qRef, { text: txt, type: type, duration: dur, options: opts });
             logAction(11, "إضافة سؤال جديد", "-", txt);
@@ -209,7 +198,7 @@
         .log-entry { border-bottom: 1px solid #1a1a1a; padding: 4px 0; white-space: pre-wrap; }
         .timer-box { font-size: 28px; color: #f85149; text-align: center; border: 2px solid #f85149; padding: 10px; border-radius: 10px; margin-bottom: 20px; }
         .opt-card { display: block; background: #21262d; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
-        .footer { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #111; font-size: 12px; z-index: 100; }
+        .footer { position: fixed; bottom: 10px; width: 100%; text-align: center; color: #111; font-size: 12px; }
         h4 { margin: 10px 0; color: #5865f2; border-bottom: 1px solid #333; }
     </style>
 </head>
@@ -261,7 +250,7 @@
         <div class="card">
             <h4>إدارة النظام (خاص بيازيد)</h4>
             <div style="display:flex; gap:10px;"><input type="text" id="course-input" class="inp" placeholder="اسم الدورة"><button onclick="saveCourse()">تحديث</button></div>
-            <button onclick="addQ()" style="background:#238636; width:100%">+ إضافة سؤال جديد (مقالي/خيارات)</button>
+            <button onclick="addQ()" style="background:#238636; width:100%">+ إضافة سؤال جديد (استخدم + للفصل)</button>
 
             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:15px; max-height:250px; overflow-y:auto;">
                 <div><small>إدارة الأسئلة</small><table><tbody id="logs-manage-qs"></tbody></table></div>
