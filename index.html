@@ -7,9 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // --- إعدادات النظام ---
         const firebaseConfig = {
             apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
             authDomain: "mmca-authority.firebaseapp.com",
@@ -27,44 +26,63 @@
 
         let currentUser = null;
 
-        // --- دوال التحكم في الواجهة ---
-        window.switchView = (viewId) => {
-            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
+        // دالة التنقل
+        window.switchView = (id) => {
+            const views = ['view-login', 'view-requirements', 'view-waiting', 'view-admin', 'view-logs'];
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                if(el) el.classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
         };
 
-        // --- تسجيل الدخول (Discord) ---
+        // تسجيل الدخول
         window.discordLogin = () => {
             const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
             window.location.href = url;
         };
 
-        // --- معالجة العودة من الديسكورد ---
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.hash.slice(1));
-            if (params.has("access_token")) {
-                fetch('https://discord.com/api/users/@me', {
-                    headers: { authorization: `Bearer ${params.get("access_token")}` }
-                })
-                .then(res => res.json()).then(data => {
-                    currentUser = data;
-                    document.getElementById('discord-nick').value = data.global_name || data.username;
-                    switchView('view-requirements');
-                    logAction(1, "قام بالتحقق من الهوية عبر ديسكورد", data.id);
-                }).catch(() => alert("حدث خطأ في الاتصال بديسكورد"));
-            }
-        };
-
-        // --- نظام اللوقات المركزي (12 قناة) ---
-        window.logAction = (logNum, message, userId = "System") => {
-            push(ref(db, `logs/L${logNum}`), {
-                timestamp: new Date().toLocaleString('ar-EG'),
-                user: userId,
-                action: message
+        // اللوقات
+        window.logAction = (n, msg, uid = "System") => {
+            push(ref(db, `logs/L${n}`), {
+                time: new Date().toLocaleString('ar-EG'),
+                user: uid,
+                action: msg
             });
         };
 
-        // --- إرسال الطلب ---
+        // --- المعالج المصلح للعودة من ديسكورد ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get("access_token");
+
+            if (accessToken) {
+                // منع اختفاء الواجهة عبر تنظيف الهاش بدون إعادة تحميل
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${accessToken}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.id) {
+                        currentUser = data;
+                        switchView('view-requirements');
+                        document.getElementById('discord-nick').value = data.global_name || data.username;
+                        logAction(1, "سجل دخول بنجاح", data.id);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    switchView('view-login');
+                });
+            } else {
+                // إذا لم يوجد توكن، ابقَ في صفحة الدخول
+                switchView('view-login');
+            }
+        });
+
+        // إرسال الطلب
         window.submitArmyForm = () => {
             const data = {
                 fullName: document.getElementById('f-name').value,
@@ -74,110 +92,73 @@
                 discordId: currentUser.id,
                 status: 'pending'
             };
-
-            if(!data.fullName || !data.mCode) return alert("يرجى تعبئة الحقول الأساسية!");
-
+            if(!data.fullName || !data.mCode) return alert("أكمل البيانات!");
+            
             set(ref(db, 'applications/' + currentUser.id), data);
             switchView('view-waiting');
-            logAction(1, "أرسل متطلبات الانضمام للاختبار", currentUser.id);
+            logAction(1, "أرسل بياناته العسكرية", currentUser.id);
 
-            // مراقبة القبول
             onValue(ref(db, 'applications/' + currentUser.id), (snap) => {
                 if(snap.val()?.status === 'accepted') {
-                    alert("تم قبولك! استعد لبدء الاختبار.");
-                    // هنا سنضع دالة بدء الاختبار في الجزء القادم
+                    alert("تم قبولك! جاري تجهيز الاختبار...");
+                    // سيتم إضافة كود الاختبار في الجزء القادم
                 }
             });
         };
 
-        // --- البوابات السرية (حقوق ومارفل) ---
-        window.openSecretGate = (gateType) => {
-            const p = prompt("كلمة المرور العسكرية:");
-            if(gateType === 'rights' && p === '0101') {
-                switchView('view-admin');
-                logAction(2, "فتح لوحة الإدارة");
-            } else if(gateType === 'marvel' && p === '9999') {
-                switchView('view-logs');
-                logAction(9, "فتح لوحة اللوقات والتحكم");
-            } else {
-                alert("تنبيه: محاولة دخول غير مصرح بها!");
-                logAction(3, "فشل في تسجيل الدخول للوحة التحكم");
-            }
+        window.openSecretGate = (g) => {
+            const p = prompt("كلمة المرور:");
+            if(g === 'rights' && p === '0101') switchView('view-admin');
+            else if(g === 'marvel' && p === '9999') switchView('view-logs');
+            else alert("خطأ!");
         };
-
     </script>
     <style>
         :root { --p: #5865f2; --bg: #0d1117; --card: #161b22; --border: #30363d; }
         body { background: var(--bg); color: #c9d1d9; font-family: 'Cairo', sans-serif; direction: rtl; margin: 0; }
-        .view { padding: 50px 20px; max-width: 800px; margin: auto; }
+        .view { padding: 50px 20px; max-width: 800px; margin: auto; min-height: 400px; }
         .hidden { display: none !important; }
-        .card { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 12px; }
-        .input-group { margin-bottom: 15px; }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .input-group { margin-bottom: 15px; text-align: right; }
         label { display: block; margin-bottom: 8px; font-weight: bold; }
         input { width: 100%; padding: 12px; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
-        button { background: var(--p); color: #fff; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
-        button:hover { background: #4752c4; }
-        .footer { position: fixed; bottom: 15px; width: 100%; text-align: center; color: #111; font-size: 13px; cursor: default; }
-        .gate-span { cursor: pointer; padding: 0 4px; }
+        button { background: var(--p); color: #fff; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; }
+        .footer { position: fixed; bottom: 15px; width: 100%; text-align: center; color: #1a1d23; font-size: 13px; z-index: 100; }
+        .gate-span { cursor: pointer; padding: 0 5px; }
     </style>
 </head>
 <body>
 
-    <div id="view-login" class="view" style="text-align:center; padding-top:150px;">
-        <h1 style="font-size: 50px; color: #fff; margin-bottom: 10px;">دولة مارفل</h1>
-        <p style="margin-bottom: 40px; color: #8b949e;">نظام الاختبارات العسكرية واللوقات الموحد</p>
+    <div id="view-login" class="view hidden" style="text-align:center; padding-top:150px;">
+        <h1 style="font-size: 50px; color: #fff;">دولة مارفل</h1>
+        <p style="margin-bottom: 40px; color: #8b949e;">نظام الاختبارات واللوقات العسكري</p>
         <button onclick="discordLogin()">تسجيل الدخول عبر ديسكورد للتحقق</button>
     </div>
 
     <div id="view-requirements" class="view hidden">
         <div class="card">
-            <h2>المتطلبات العسكرية</h2>
+            <h2 style="text-align:center; margin-bottom:25px;">تعبئة بيانات المتدرب</h2>
             <div class="input-group">
-                <label>الاسم في الديسكورد (تلقائي):</label>
-                <input type="text" id="discord-nick" readonly>
+                <label>اسم الديسكورد (تلقائي):</label>
+                <input type="text" id="discord-nick" readonly style="color: #5865f2; font-weight: bold;">
             </div>
-            <div class="input-group">
-                <label>الاسم الفعلي:</label>
-                <input type="text" id="f-name">
-            </div>
-            <div class="input-group">
-                <label>الكود العسكري:</label>
-                <input type="text" id="f-code">
-            </div>
-            <div class="input-group">
-                <label>الرتبة:</label>
-                <input type="text" id="f-rank">
-            </div>
-            <div class="input-group">
-                <label>العمر:</label>
-                <input type="number" id="f-age">
-            </div>
-            <button onclick="submitArmyForm()">إرسال البيانات والتحقق</button>
+            <div class="input-group"><label>الاسم الفعلي:</label><input type="text" id="f-name"></div>
+            <div class="input-group"><label>الكود العسكري:</label><input type="text" id="f-code"></div>
+            <div class="input-group"><label>الرتبة:</label><input type="text" id="f-rank"></div>
+            <div class="input-group"><label>العمر:</label><input type="number" id="f-age"></div>
+            <button onclick="submitArmyForm()">إرسال البيانات للمشرفين</button>
         </div>
     </div>
 
     <div id="view-waiting" class="view hidden" style="text-align:center; padding-top:100px;">
         <div class="card">
-            <h2 style="color: #e3b341;">بانتظار موافقة المشرف...</h2>
-            <p>تم استلام بياناتك بنجاح، يرجى انتظار تفعيل الاختبار من قبل القادة.</p>
+            <h2 style="color: #e3b341;">بانتظار الموافقة...</h2>
+            <p>تم استلام طلبك، يرجى الانتظار في هذه الصفحة حتى يقوم المشرف بقبولك.</p>
         </div>
     </div>
 
-    <div id="view-admin" class="view hidden">
-        <div class="card">
-            <h3>لوحة المشرفين (قبول الطلاب)</h3>
-            <p>سيتم عرض طلبات الدخول هنا في الخطوة القادمة...</p>
-            <button onclick="switchView('view-login')">العودة للرئيسية</button>
-        </div>
-    </div>
-
-    <div id="view-logs" class="view hidden">
-        <div class="card">
-            <h3>لوحة التحكم واللوقات</h3>
-            <p>سيتم عرض اللوقات الـ 12 هنا في الخطوة القادمة...</p>
-            <button onclick="switchView('view-login')">العودة للرئيسية</button>
-        </div>
-    </div>
+    <div id="view-admin" class="view hidden"><div class="card"><h3>لوحة المشرفين</h3><button onclick="switchView('view-login')">خروج</button></div></div>
+    <div id="view-logs" class="view hidden"><div class="card"><h3>لوحة اللوقات</h3><button onclick="switchView('view-login')">خروج</button></div></div>
 
     <div class="footer">
         © <span class="gate-span" onclick="openSecretGate('rights')">حقوق</span> 
