@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مارفل العسكري</title>
+    <title>دولة مارفل - النظام المتكامل</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // إعدادات قاعدة البيانات
         const firebaseConfig = {
             apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
             authDomain: "mmca-authority.firebaseapp.com",
@@ -22,195 +23,268 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const CLIENT_ID = "1470440081612603465";
-        const REDIRECT_URI = window.location.href.split('#')[0];
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-        let userSession = null;
+        let user = null;
         let questions = [];
         let currentQIndex = 0;
         let timer;
-        let config = { essayTime: 30, choiceTime: 15, courseName: "دورة الصاعقة" };
+        let settings = { essayTime: 30, choiceTime: 15, courseName: "دورة عسكرية" };
 
-        // دالة عرض الصفحات
-        window.showView = (id) => {
-            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
+        // --- نظام اللوقات الـ 12 ---
+        window.writeLog = (n, msg, uid = "غير معروف") => {
+            push(ref(db, `logs/L${n}`), {
+                time: new Date().toLocaleString('ar-EG'),
+                userId: uid,
+                data: msg
+            });
         };
 
-        // نظام اللوقات
-        window.writeLog = (n, msg, uid = "N/A") => {
-            push(ref(db, `logs/L${n}`), { time: new Date().toLocaleString('ar-EG'), id: uid, data: msg });
-        };
-
-        // تسجيل الدخول ديسكورد
-        window.loginDiscord = () => {
+        // --- التحقق عبر ديسكورد ---
+        window.login = () => {
             window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
         };
 
         window.onload = () => {
-            const params = new URLSearchParams(window.location.hash.slice(1));
-            if (params.has("access_token")) {
-                fetch('https://discord.com/api/users/@me', { headers: { authorization: `Bearer ${params.get("access_token")}` } })
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            if (fragment.has("access_token")) {
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${fragment.get("access_token")}` }
+                })
                 .then(res => res.json()).then(data => {
-                    userSession = data;
+                    user = data;
                     showView('view-requirements');
-                    document.getElementById('u-name-auto').value = data.global_name || data.username;
-                    writeLog(1, "بدأ التحقق عبر ديسكورد", data.id);
+                    document.getElementById('name-discord').value = data.global_name || data.username;
+                    writeLog(1, "سجل دخول للتحقق", data.id);
                 });
             }
-            onValue(ref(db, 'config'), s => { if(s.exists()) { config = s.val(); document.querySelectorAll('.c-name').forEach(e => e.innerText = config.courseName); } });
+            // جلب الإعدادات
+            onValue(ref(db, 'config'), s => {
+                if(s.exists()) {
+                    settings = s.val();
+                    document.querySelectorAll('.course-label').forEach(el => el.innerText = settings.courseName);
+                }
+            });
         };
 
-        // إرسال المتطلبات
+        // --- صفحة التقديم والقبول ---
         window.submitReqs = () => {
             const data = {
-                name: document.getElementById('u-name-real').value,
-                code: document.getElementById('u-code').value,
-                rank: document.getElementById('u-rank').value,
-                age: document.getElementById('u-age').value,
-                discordId: userSession.id,
-                status: 'pending'
+                name: document.getElementById('name-real').value,
+                code: document.getElementById('code-mil').value,
+                rank: document.getElementById('rank-mil').value,
+                age: document.getElementById('age-mil').value,
+                discordId: user.id,
+                status: 'بانتظار القبول'
             };
-            if(!data.name || !data.code) return alert("املأ البيانات!");
-            set(ref(db, 'requests/' + userSession.id), data);
+            if(!data.name || !data.code) return alert("يرجى إكمال البيانات!");
+            set(ref(db, 'requests/' + user.id), data);
             showView('view-waiting');
-            writeLog(1, "أرسل متطلباته", userSession.id);
-            onValue(ref(db, 'requests/' + userSession.id), s => { if(s.val()?.status === 'accepted') startExam(); });
+            writeLog(1, "أرسل متطلباته وبانتظار القبول", user.id);
+
+            onValue(ref(db, 'requests/' + user.id), (snap) => {
+                if(snap.val()?.status === 'accepted') startExam();
+            });
         };
 
-        // نظام الاختبار
+        // --- نظام الاختبار بالمؤقت ---
         async function startExam() {
-            const s = await get(ref(db, 'questions'));
-            questions = []; s.forEach(q => questions.push({id: q.key, ...q.val()}));
+            const snap = await get(ref(db, 'questions'));
+            questions = []; snap.forEach(c => questions.push({id: c.key, ...c.val()}));
             showView('view-exam');
-            renderQ();
+            renderQuestion();
         }
 
-        function renderQ() {
+        function renderQuestion() {
             if(currentQIndex >= questions.length) { showView('view-finish'); return; }
             const q = questions[currentQIndex];
-            const area = document.getElementById('q-area');
-            let time = q.type === 'choice' ? config.choiceTime : config.essayTime;
+            const area = document.getElementById('exam-area');
+            let timeLeft = (q.type === 'choice') ? settings.choiceTime : settings.essayTime;
             
-            let html = `<h3>السؤال: ${q.text}</h3>`;
+            let html = `<h3>السؤال ${currentQIndex + 1}: ${q.text}</h3>`;
             if(q.type === 'choice') {
-                q.options.forEach(o => html += `<label class="opt"><input type="radio" name="a" value="${o}"> ${o}</label><br>`);
+                q.options.forEach(opt => html += `<label class="opt-card"><input type="radio" name="ans" value="${opt}"> ${opt}</label>`);
             } else {
-                html += `<textarea id="essay-ans"></textarea>`;
+                html += `<textarea id="essay-ans" placeholder="اكتب الإجابة هنا..."></textarea>`;
             }
             area.innerHTML = html;
-            document.getElementById('timer').innerText = time;
+            document.getElementById('timer-count').innerText = timeLeft;
+
             clearInterval(timer);
             timer = setInterval(() => {
-                time--; document.getElementById('timer').innerText = time;
-                if(time <= 0) nextQ();
+                timeLeft--;
+                document.getElementById('timer-count').innerText = timeLeft;
+                if(timeLeft <= 0) nextQuestion();
             }, 1000);
         }
 
-        window.nextQ = () => {
+        window.nextQuestion = () => {
             const q = questions[currentQIndex];
-            const ans = q.type === 'choice' ? document.querySelector('input[name="a"]:checked')?.value : document.getElementById('essay-ans').value;
-            set(ref(db, `answers/${userSession.id}/${q.id}`), { name: userSession.username, id: userSession.id, q: q.text, ans: ans || "تجاوز الوقت" });
-            currentQIndex++; renderQ();
-        };
-
-        // بوابات الدخول
-        window.openGate = (type) => {
-            const p = prompt("كلمة المرور:");
-            if(type === 'admin' && p === '0101') { showView('view-admin'); initAdmin(); writeLog(2, "دخل المشرفين"); }
-            else if(type === 'logs' && p === '9999') { showView('view-logs'); initLogs(); writeLog(9, "دخل اللوقات"); }
-            else { alert("خطأ!"); writeLog(3, "محاولة دخول فاشلة"); }
-        };
-
-        // لوحة المشرفين واللوقات (تفعيل الحذف والإضافة)
-        function initAdmin() {
-            onValue(ref(db, 'requests'), s => {
-                let h = ""; s.forEach(c => { const r = c.val(); h += `<tr><td>${r.name}</td><td>${r.discordId}</td><td>${r.code}</td><td>${r.status}</td><td><button onclick="upd('requests/${c.key}','accepted',4)">قبول</button></td></tr>`; });
-                document.getElementById('admin-reqs').innerHTML = h;
+            const ans = q.type === 'choice' ? document.querySelector('input[name="ans"]:checked')?.value : document.getElementById('essay-ans').value;
+            set(ref(db, `answers/${user.id}/${q.id}`), {
+                name: user.username, id: user.id, question: q.text, answer: ans || "تجاوز الوقت", score: ""
             });
-        }
+            writeLog(6, `أجاب على السؤال: ${q.text}`, user.id);
+            currentQIndex++; renderQuestion();
+        };
 
+        // --- الدخول السري ---
+        window.openGate = (gate) => {
+            const n = prompt("الاسم:");
+            const c = prompt("الكود العسكري:");
+            const p = prompt("كلمة المرور:");
+            
+            if(gate === 'admin' && p === '0101') {
+                showView('view-admin'); initAdmin();
+                writeLog(2, "دخل صفحة المشرفين", c);
+            } else if(gate === 'logs' && p === '9999') {
+                showView('view-logs-page'); initLogs();
+                writeLog(9, "دخل صفحة اللوقات", c);
+            } else {
+                alert("بيانات خاطئة!");
+                writeLog(3, "محاولة تلاعب بالدخول", c || "مجهول");
+            }
+        };
+
+        // --- التحكم الكامل (اللوقات والأسئلة) ---
         function initLogs() {
+            onValue(ref(db, 'config'), s => {
+                const d = s.val();
+                document.getElementById('edit-course-name').value = d.courseName;
+                document.getElementById('edit-essay-time').value = d.essayTime;
+                document.getElementById('edit-choice-time').value = d.choiceTime;
+            });
+            // عرض اللوقات الـ 12
             for(let i=1; i<=12; i++) {
-                onValue(ref(db, `logs/L${i}`), s => {
-                    let h = ""; s.forEach(l => { h += `<div class="l-line">${l.val().time} | ${l.val().data} <button onclick="del('logs/L${i}/${l.key}')">X</button></div>`; });
-                    document.getElementById(`l-box-${i}`).innerHTML = h;
+                onValue(ref(db, `logs/L${i}`), snap => {
+                    const box = document.getElementById(`box-l-${i}`); box.innerHTML = "";
+                    snap.forEach(l => {
+                        box.innerHTML = `<div class="log-item">${l.val().time} | ${l.val().data} <button class="del-btn" onclick="delData('logs/L${i}/${l.key}')">حذف</button></div>` + box.innerHTML;
+                    });
                 });
             }
+            // عرض الأسئلة
+            onValue(ref(db, 'questions'), snap => {
+                const list = document.getElementById('qs-list'); list.innerHTML = "";
+                snap.forEach(c => {
+                    list.innerHTML += `<tr><td>${c.val().text}</td><td><button onclick="delData('questions/${c.key}')">حذف</button></td></tr>`;
+                });
+            });
         }
 
         window.saveSettings = () => {
             update(ref(db, 'config'), {
-                courseName: document.getElementById('set-name').value,
-                essayTime: parseInt(document.getElementById('set-e').value),
-                choiceTime: parseInt(document.getElementById('set-c').value)
+                courseName: document.getElementById('edit-course-name').value,
+                essayTime: parseInt(document.getElementById('edit-essay-time').value),
+                choiceTime: parseInt(document.getElementById('edit-choice-time').value)
             });
-            writeLog(11, "تعديل الإعدادات");
+            writeLog(11, "قام بتعديل الإعدادات والمؤقتات"); alert("تم الحفظ بنجاح!");
         };
 
-        window.upd = (path, s, l) => { update(ref(db, path), {status: s}); writeLog(l, "تحديث حالة"); };
-        window.del = (path) => { if(confirm("حذف؟")) { remove(ref(db, path)); writeLog(11, "حذف بيانات"); } };
+        window.addQuestion = () => {
+            const text = prompt("نص السؤال:");
+            const type = confirm("موافق للخيارات / إلغاء للمقالي") ? "choice" : "essay";
+            let options = []; if(type === 'choice') options = prompt("أدخل الخيارات (افصل بفاصلة)").split(",");
+            push(ref(db, 'questions'), { text, type, options });
+            writeLog(11, "أضاف سؤال جديد");
+        };
+
+        window.initAdmin = () => {
+            onValue(ref(db, 'requests'), s => {
+                const b = document.getElementById('admin-req-body'); b.innerHTML = "";
+                s.forEach(c => { b.innerHTML += `<tr><td>${c.val().name}</td><td>${c.val().discordId}</td><td>${c.val().code}</td><td>${c.val().status}</td><td><button onclick="updReq('${c.key}','accepted')">قبول</button></td></tr>`; });
+            });
+        };
+
+        window.updReq = (id, s) => { update(ref(db, `requests/${id}`), {status: s}); writeLog(4, "تحديث حالة طلب"); };
+        window.delData = (path) => { if(confirm("حذف؟")) { remove(ref(db, path)); writeLog(11, "حذف بيانات من النظام"); } };
+        window.showView = (id) => { document.querySelectorAll('.view').forEach(v => v.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); };
 
     </script>
     <style>
-        body { background: #0c0f14; color: #fff; font-family: 'Cairo'; direction: rtl; text-align: center; }
-        .view { display: none; padding: 20px; }
-        .card { background: #161b22; padding: 20px; border-radius: 10px; border: 1px solid #30363d; max-width: 600px; margin: auto; }
-        input, button, textarea { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #30363d; background: #0d1117; color: #fff; }
-        button { background: #5865f2; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border: 1px solid #333; margin-top: 10px; }
-        .l-box { height: 100px; overflow-y: auto; background: #000; color: #0f0; font-size: 10px; text-align: right; padding: 5px; }
-        .footer { position: fixed; bottom: 10px; width: 100%; color: #1a1a1a; cursor: pointer; }
+        :root { --p: #5865f2; --bg: #0c0f14; --card: #161b22; --border: #30363d; }
+        body { background: var(--bg); color: #fff; font-family: 'Cairo'; direction: rtl; margin: 0; }
+        .view { padding: 40px; max-width: 1000px; margin: auto; }
+        .hidden { display: none !important; }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 20px; }
+        input, textarea { background: #010409; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 6px; width: 100%; margin: 10px 0; box-sizing: border-box; }
+        button { background: var(--p); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .opt-card { display: block; background: #21262d; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); }
+        .timer-display { font-size: 30px; color: #f85149; font-weight: bold; text-align: center; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border); padding: 12px; text-align: center; }
+        .log-box { height: 150px; overflow-y: auto; background: #000; color: #39ff14; font-family: monospace; padding: 10px; font-size: 11px; border: 1px solid #333; margin-bottom: 10px; }
+        .footer { position: fixed; bottom: 15px; width: 100%; text-align: center; color: #111; cursor: pointer; }
+        .del-btn { background: #da3633; font-size: 10px; padding: 2px 5px; }
     </style>
 </head>
 <body>
 
-    <div id="view-start" class="view" style="display:block; padding-top: 100px;">
-        <h1>دولة مارفل</h1>
-        <button onclick="loginDiscord()">تسجيل الدخول عن طريق الديسكورد للتحقق</button>
+    <div id="view-login" class="view" style="text-align: center; padding-top: 100px;">
+        <h1 style="font-size: 50px;">دولة مارفل</h1>
+        <button onclick="login()" style="font-size: 20px;">تسجيل الدخول عن طريق الديسكورد للتحقق</button>
     </div>
 
-    <div id="view-requirements" class="view">
+    <div id="view-requirements" class="view hidden">
         <div class="card">
-            <h2>اختبار الدورة (<span class="c-name"></span>)</h2>
-            <label>الاسم :</label><input type="text" id="u-name-auto" readonly>
-            <label>الاسم الفعلي :</label><input type="text" id="u-name-real">
-            <label>الكود العسكري :</label><input type="text" id="u-code">
-            <label>الرتبة :</label><input type="text" id="u-rank">
-            <label>العمر :</label><input type="number" id="u-age">
-            <button onclick="submitReqs()">إرسال المتطلبات</button>
+            <h2>اختبار الدورة: (<span class="course-label"></span>)</h2>
+            <p>يرجى مل المتطلبات التالية :</p>
+            <label>الاسم :</label><input type="text" id="name-discord" readonly>
+            <label>الاسم الفعلي :</label><input type="text" id="name-real">
+            <label>الكود العسكري :</label><input type="text" id="code-mil">
+            <label>الرتبة :</label><input type="text" id="rank-mil">
+            <label>العمر :</label><input type="number" id="age-mil">
+            <button onclick="submitReqs()" style="width: 100%;">إرسال المتطلبات والتحقق</button>
         </div>
     </div>
 
-    <div id="view-waiting" class="view"><h2>يرجى الانتظار لقبول طلب الدخول الى الاختبار</h2></div>
-
-    <div id="view-exam" class="view">
+    <div id="view-waiting" class="view hidden" style="text-align: center; padding-top: 100px;">
         <div class="card">
-            <div id="timer" style="font-size: 30px; color: red;"></div>
-            <div id="q-area"></div>
-            <button onclick="nextQ()">السؤال التالي</button>
+            <h2 style="color: #e3b341;">يرجى الانتظار لقبول طلب الدخول الى الاختبار</h2>
         </div>
     </div>
 
-    <div id="view-finish" class="view">
-        <h2>تهانينا لك على إكمال الاختبار</h2>
-        <button onclick="location.reload()">إرسال الاختبار</button>
-    </div>
-
-    <div id="view-admin" class="view">
-        <h3>صفحة المشرفين</h3>
-        <table><thead><tr><th>الاسم</th><th>الايدي</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="admin-reqs"></tbody></table>
-    </div>
-
-    <div id="view-logs" class="view">
+    <div id="view-exam" class="view hidden">
         <div class="card">
-            <h3>التحكم بالمؤقتات</h3>
-            اسم الدورة: <input id="set-name">
-            وقت المقالي: <input type="number" id="set-e">
-            وقت الخيارات: <input type="number" id="set-c">
-            <button onclick="saveSettings()">حفظ</button>
+            <div class="timer-display">مؤقت السؤال: <span id="timer-count">--</span></div>
+            <div id="exam-area"></div>
+            <button onclick="nextQuestion()" style="width: 100%; margin-top: 20px;">السؤال التالي</button>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `<div><small>لوق ${i}</small><div id="l-box-${i}" class="l-box"></div></div>`).join('')}
+    </div>
+
+    <div id="view-finish" class="view hidden" style="text-align: center; padding-top: 100px;">
+        <div class="card">
+            <h2 style="color: #3fb950;">تهانينا لك على إكمال الاختبار</h2>
+            <p>يرجى الضغط على زر إرسال الاختبار</p>
+            <button onclick="location.reload()">إرسال الاختبار</button>
+        </div>
+    </div>
+
+    <div id="view-admin" class="view hidden">
+        <div class="card">
+            <h3>قسم طلبات الدخول</h3>
+            <table><thead><tr><th>الاسم</th><th>الديسكورد</th><th>الكود</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="admin-req-body"></tbody></table>
+        </div>
+    </div>
+
+    <div id="view-logs-page" class="view hidden">
+        <div class="card">
+            <h3>قسم التحكم بالمؤقتات والدورة</h3>
+            اسم الدورة: <input type="text" id="edit-course-name">
+            وقت المقالي (ثواني): <input type="number" id="edit-essay-time">
+            وقت الاختيارات (ثواني): <input type="number" id="edit-choice-time">
+            <button onclick="saveSettings()">حفظ الإعدادات</button>
+        </div>
+
+        <div class="card">
+            <h3>قسم الأسئلة</h3>
+            <button onclick="addQuestion()">إضافة سؤال جديد</button>
+            <table><thead><tr><th>نص السؤال</th><th>إجراء</th></tr></thead><tbody id="qs-list"></tbody></table>
+        </div>
+
+        <h3>قسم اللوقات الـ 12</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `<div><small>لوق ${i}</small><div id="box-l-${i}" class="log-box"></div></div>`).join('')}
         </div>
     </div>
 
