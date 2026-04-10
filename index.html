@@ -15,166 +15,176 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Cairo', sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-silver);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
             background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0c 100%);
         }
 
-        /* حاوية النظام */
+        /* حاوية النظام الموحد */
         .system-container {
             width: 450px;
             background: var(--card-bg);
-            padding: 40px;
+            padding: 50px 40px;
             border-radius: 20px;
             border: 1px solid rgba(0, 212, 255, 0.2);
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(106, 13, 173, 0.2);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.7);
             text-align: center;
             position: relative;
+            z-index: 1;
         }
 
         .system-container::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
             background: linear-gradient(45deg, var(--secondary-glow), transparent, var(--primary-glow));
-            border-radius: 22px;
-            z-index: -1;
-            opacity: 0.3;
+            border-radius: 21px; z-index: -1; opacity: 0.3;
         }
 
-        .badge {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 5px 20px;
+        .badge-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 6px 20px;
             border-radius: 50px;
             font-size: 0.8rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #888;
             margin-bottom: 15px;
             display: inline-block;
         }
 
         h1 {
-            font-size: 2.5rem;
-            font-weight: 900;
-            margin: 10px 0;
-            background: linear-gradient(to bottom, #fff, #888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 3rem; font-weight: 900; margin: 5px 0;
+            background: linear-gradient(to bottom, #ffffff 30%, #666666 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .course-title {
+        .course-name {
             color: var(--primary-glow);
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1.4rem; font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            margin-bottom: 25px;
+        }
+
+        .system-title {
+            font-size: 1rem; color: #666; margin-bottom: 40px;
             letter-spacing: 1px;
-            margin-bottom: 30px;
         }
 
-        .system-desc {
-            font-size: 0.9rem;
-            color: #777;
-            margin-bottom: 40px;
+        /* زر الديسكورد */
+        .btn-discord {
+            width: 100%; padding: 18px;
+            background: #5865F2; border: none; border-radius: 12px;
+            color: white; font-weight: 900; font-size: 1rem;
+            cursor: pointer; transition: 0.4s;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
-        /* حقول الإدخال */
-        .input-group {
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        input[type="password"] {
-            width: 100%;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 10px;
-            color: white;
-            text-align: center;
-            font-size: 1.1rem;
-            box-sizing: border-box;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        input[type="password"]:focus {
-            border-color: var(--primary-glow);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-        }
-
-        /* أزرار الدخول */
-        .btn-login {
-            width: 100%;
-            padding: 15px;
-            background: var(--primary-glow);
-            border: none;
-            border-radius: 10px;
-            color: #000;
-            font-weight: 900;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.4s;
-            text-transform: uppercase;
-        }
-
-        .btn-login:hover {
-            background: white;
-            box-shadow: 0 0 20px var(--primary-glow);
+        .btn-discord:hover {
+            background: #4752c4; box-shadow: 0 0 20px rgba(88, 101, 242, 0.4);
             transform: translateY(-2px);
         }
 
-        footer {
-            position: absolute;
-            bottom: 20px;
-            font-size: 0.7rem;
-            color: #444;
-            width: 100%;
-            text-align: center;
+        /* نافذة الإدخال السرية */
+        #secretOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 100;
+            justify-content: center; align-items: center;
         }
+
+        .secret-box {
+            background: var(--card-bg); padding: 30px; border-radius: 15px;
+            border: 1px solid var(--primary-glow); text-align: center; width: 320px;
+        }
+
+        .secret-box input {
+            width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px;
+            border: 1px solid #333; background: #000; color: var(--primary-glow);
+            text-align: center; font-size: 1.2rem; outline: none;
+        }
+
+        /* الفوتر (الحقوق) */
+        footer {
+            position: absolute; bottom: 30px; text-align: center; width: 100%;
+        }
+
+        .rights-1 { font-size: 0.9rem; color: #555; font-weight: bold; margin-bottom: 5px; }
+        .rights-2 { 
+            font-size: 0.8rem; color: #333; cursor: default;
+            transition: 0.3s;
+        }
+
+        /* تفعيل اليد فقط عند معرفة السر */
+        .rights-2:active { color: var(--primary-glow); }
     </style>
 </head>
 <body>
 
     <div class="system-container">
-        <div class="badge">هيئة تنظيم الدورات العسكرية</div>
+        <div class="badge-header">هيئة تنظيم الدورات العسكرية</div>
         <h1>دولة مارفل</h1>
-        <div class="course-title" id="courseName">الدورة</div>
-        <p class="system-desc">النظام الموحد للاختبارات الإلكترونية</p>
+        <div class="course-name">الدورة</div>
+        <p class="system-title">النظام الموحد للاختبارات الإلكترونية</p>
 
-        <form id="loginForm">
-            <div class="input-group">
-                <input type="password" id="accessCode" placeholder="أدخل كود الولوج الرسمي" required>
-            </div>
-            <button type="submit" class="btn-login">الولوج عبر الهوية الرقمية</button>
-        </form>
+        <button class="btn-discord" onclick="startDiscordAuth()">
+            <span>الولوج عبر الهوية الرقمية</span>
+        </button>
+    </div>
+
+    <div id="secretOverlay">
+        <div class="secret-box">
+            <div style="color: #666; font-size: 0.8rem;">صلاحيات الهيئة العليا</div>
+            <input type="password" id="secretKey" placeholder="••••" oninput="validateSecret()">
+            <div style="margin-top: 10px; font-size: 0.7rem; color: #333;">نظام التشفير النشط</div>
+        </div>
     </div>
 
     <footer>
-        جميع الحقوق محفوظة © هيئة الدورات العسكرية | دولة مارفل 2026
+        <div class="rights-1">حقوق - دولة مارفل</div>
+        <div class="rights-2" id="secretTrigger">هيئة تنظيم الدورات العسكرية</div>
     </footer>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const code = document.getElementById('accessCode').value;
+        let isAuth = false; // ستتغير لـ true بعد ربط الديسكورد
 
-            if (code === '9999') {
-                alert('مرحباً بك سيادة رئيس هيئة تنظيم الدورات');
-                // هنا سيتم التوجيه لصفحة الرئيس
-            } else if (code === '0101') {
-                alert('مرحباً بكم أعضاء هيئة تنظيم الدورات');
-                // هنا سيتم التوجيه لصفحة الأعضاء
+        function startDiscordAuth() {
+            // هنا يتم وضع رابط Discord OAuth2 الخاص بك
+            alert("سيتم الآن تحويلك للتحقق عبر Discord...");
+            isAuth = true; // محاكاة لنجاح التحقق
+            console.log("التحقق من الهوية الرقمية: ناجح");
+        }
+
+        // المدخل السري داخل الحقوق
+        const trigger = document.getElementById('secretTrigger');
+        trigger.addEventListener('dblclick', function() {
+            if(isAuth) {
+                document.getElementById('secretOverlay').style.display = 'flex';
+                document.getElementById('secretKey').focus();
             } else {
-                alert('عذراً، كود الولوج غير صحيح أو غير مصرح لك بالدخول');
+                console.log("يجب التحقق من الهوية الرقمية أولاً.");
             }
         });
+
+        // التحقق من الأكواد السرية وتوجيه الرتب
+        function validateSecret() {
+            const key = document.getElementById('secretKey').value;
+            
+            if (key === '9999') {
+                window.location.href = "president_panel.html"; // صفحة رئيس هيئة تنظيم الدورات
+            } else if (key === '0101') {
+                window.location.href = "members_panel.html"; // صفحة أعضاء هيئة تنظيم الدورات
+            }
+        }
+
+        // إغلاق النافذة السرية عند الضغط خارجها
+        window.onclick = function(event) {
+            const overlay = document.getElementById('secretOverlay');
+            if (event.target == overlay) {
+                overlay.style.display = "none";
+                document.getElementById('secretKey').value = "";
+            }
+        }
     </script>
 </body>
 </html>
