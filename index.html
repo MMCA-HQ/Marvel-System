@@ -7,21 +7,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --p: #00d4ff; --g: #ffcc00; --r: #ff4b2b; --bg: #050507; --c: #0d0d12; }
-        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; transition: 0.3s; }
+        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; transition: 0.3s; border: 0px solid transparent; }
+        
+        /* كاشف الخروج (العين الحمراء) */
         body.alert-border { border: 10px solid var(--r); box-shadow: inset 0 0 50px var(--r); }
-        .section { display: none; width: 100%; max-width: 700px; padding: 20px; animation: fadeIn 0.5s; }
+
+        .section { display: none; width: 100%; max-width: 750px; padding: 20px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* التنبيهات الداخلية */
         #mAlert { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(13, 13, 18, 0.98); border: 1px solid var(--p); padding: 15px 40px; border-radius: 12px; z-index: 9999; box-shadow: 0 0 20px var(--p); text-align: center; font-weight: bold; }
-        .m-box { background: var(--c); padding: 30px; border-radius: 25px; border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9); text-align: center; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 15px; }
+
+        .m-box { background: var(--c); padding: 35px; border-radius: 30px; border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9); text-align: center; position: relative; }
+        
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 15px; font-size: 1rem; }
         .btn-gold { background: var(--g); color: black; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; text-align: center; font-family: 'Cairo'; box-sizing: border-box; }
+        .btn-red { background: var(--r); color: white; }
+
+        input, textarea { width: 100%; padding: 14px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; text-align: center; font-family: 'Cairo'; box-sizing: border-box; font-size: 1rem; }
+        
         #gateway { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 8000; justify-content: center; align-items: center; }
+        
         footer { position: fixed; bottom: 20px; width: 100%; text-align: center; display: none; }
-        .rights { font-size: 0.8rem; color: #111; cursor: default; user-select: none; }
-        .q-item { background: #1a1a25; padding: 20px; border-radius: 15px; border-right: 5px solid var(--p); margin: 15px 0; text-align: right; }
-        .opt { display: block; background: #000; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; cursor: pointer; text-align: right; }
-        .opt:hover { border-color: var(--p); background: rgba(0, 212, 255, 0.05); }
+        .rights { font-size: 0.8rem; color: #111; cursor: default; user-select: none; transition: 0.3s; }
+        .rights:hover { color: #222; }
+
+        /* ستايل الأسئلة */
+        .q-card { background: #16161f; padding: 25px; border-radius: 20px; border-right: 6px solid var(--p); text-align: right; margin: 20px 0; }
+        .opt-btn { display: block; width: 100%; background: #000; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #222; color: white; text-align: right; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; }
+        .opt-btn:hover, .opt-btn.active { border-color: var(--p); background: rgba(0, 212, 255, 0.05); }
+
+        #timer { position: fixed; top: 25px; left: 25px; font-weight: 900; color: var(--p); font-size: 1.6rem; text-shadow: 0 0 10px var(--p); }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -30,127 +46,162 @@
 
     <div id="entry" class="section" style="display: block;">
         <div class="m-box">
-            <h1 style="font-size: 3rem; margin: 10px 0;">دولة مارفل</h1>
-            <p id="subText">النظام الموحد للاختبارات الإلكترونية</p>
-            <button class="btn" onclick="verify()">التحقق من الهوية الرقمية</button>
+            <div style="color: var(--p); font-weight: bold; font-size: 0.8rem; border: 1px solid var(--p); display: inline-block; padding: 2px 12px; border-radius: 6px; margin-bottom: 10px;">نظام الهيئة الرقمي</div>
+            <h1 style="font-size: 3.5rem; margin: 5px 0; letter-spacing: -2px;">دولة مارفل</h1>
+            <p id="displaySubtitle" style="color: #666; font-weight: bold; margin-bottom: 30px;">النظام الموحد للاختبارات الإلكترونية</p>
+            <button class="btn" onclick="initVerify()">التحقق من الهوية الرقمية</button>
         </div>
     </div>
 
     <div id="exam" class="section">
-        <div id="timer" style="position:fixed; top:20px; left:20px; font-weight:900; color:var(--p); font-size:1.4rem;">20:00</div>
+        <div id="timer">20:00</div>
         <div class="m-box">
-            <div id="qArea"></div>
-            <button id="nextBtn" class="btn" style="display:none;" onclick="nextQ()">المهمة التالية</button>
+            <div id="examContent"></div>
+            <button id="nextBtn" class="btn" style="display:none;" onclick="nextStep()">المهمة التالية</button>
         </div>
     </div>
 
     <div id="admin" class="section">
         <div class="m-box">
-            <h2 id="admH" style="color: var(--g);">إدارة المنظومة</h2>
-            <div id="adminControls">
+            <h2 id="admTitle" style="color: var(--g); margin-bottom: 5px;">مركز العمليات</h2>
+            <p id="admRole" style="color: #555; font-size: 0.9rem; margin-bottom: 25px;"></p>
+            
+            <div id="adminZones">
                 </div>
-            <button class="btn" style="background: #222;" onclick="location.reload()">تسجيل خروج</button>
+
+            <button class="btn" style="background: #1a1a1a; margin-top: 20px;" onclick="location.reload()">إغلاق المنظومة</button>
         </div>
     </div>
 
     <div id="gateway">
         <div style="text-align: center;">
-            <input type="password" id="pass" maxlength="4" oninput="checkP()" placeholder="••••" style="font-size: 2.5rem; letter-spacing: 15px; width: 220px;">
+            <div style="color: var(--p); margin-bottom: 20px; font-size: 0.9rem; letter-spacing: 2px;">AUTHORIZATION REQUIRED</div>
+            <input type="password" id="passCode" maxlength="4" oninput="validateAccess()" placeholder="••••" style="font-size: 3rem; letter-spacing: 20px; width: 280px; border: none; background: transparent; border-bottom: 2px solid #333; border-radius: 0;">
         </div>
     </div>
 
-    <footer><div class="rights" id="trig">هيئة تنظيم الدورات العسكرية</div></footer>
+    <footer><div class="rights" id="triggerAdmin">هيئة تنظيم الدورات العسكرية</div></footer>
 
     <script>
-        // نظام الأسئلة الافتراضي (إذا لم يضف الرئيس أسئلة)
-        let defaultQs = ["ما هو الإجراء الأول عند رصد متسلل؟", "من يملك صلاحية تعميد النتائج؟"];
-        let myQs = JSON.parse(localStorage.getItem('savedQs')) || defaultQs;
-        let cur = 0;
+        // بنك الأسئلة - يتم تخزينه في متصفحك (الرئيس فقط يتحكم به)
+        let questions = JSON.parse(localStorage.getItem('marvel_qs')) || [
+            "ما هو الإجراء الأول عند رصد اختراق أمني؟",
+            "ما هي الصلاحية المباشرة لضابط أمن الوزارات؟",
+            "كيف يتم التعامل مع البلاغات مجهولة المصدر؟"
+        ];
+        let currentIdx = 0;
 
-        // حماية أمنية ومنع الخروج
+        // درع الحماية
         document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 67 || e.keyCode == 85))) return false; };
         window.onblur = () => document.body.classList.add('alert-border');
         window.onfocus = () => document.body.classList.remove('alert-border');
 
-        function showA(m) {
+        function notify(msg) {
             const a = document.getElementById('mAlert');
-            a.innerText = m; a.style.display = 'block';
+            a.innerText = msg; a.style.display = 'block';
             setTimeout(() => a.style.display = 'none', 3000);
         }
 
-        function verify() {
+        function initVerify() {
+            if(localStorage.getItem('sys_lock') === 'true') return notify("المنظومة مغلقة حالياً بأمر القيادة");
             document.querySelector('footer').style.display = 'block';
-            showA("تم التحقق بنجاح");
-            setTimeout(() => { 
+            notify("تم التحقق بنجاح. النظام جاهز.");
+            setTimeout(() => {
                 document.getElementById('entry').style.display = 'none';
                 document.getElementById('exam').style.display = 'block';
-                loadTest();
+                startExam();
             }, 1500);
         }
 
-        // الدخول السري للرئيس (9999) أو العضو (0101)
-        document.getElementById('trig').ondblclick = () => {
+        // الدخول السري
+        document.getElementById('triggerAdmin').ondblclick = () => {
             document.getElementById('gateway').style.display = 'flex';
-            document.getElementById('pass').focus();
+            document.getElementById('passCode').focus();
         };
 
-        function checkP() {
-            const val = document.getElementById('pass').value;
-            if(val === '9999') loadAdminPanel('الرئيس');
-            else if(val === '0101') loadAdminPanel('العضو');
+        function validateAccess() {
+            const code = document.getElementById('passCode').value;
+            if(code === '9999') openAdmin('الرئيس');
+            else if(code === '0101') openAdmin('عضو الهيئة');
         }
 
-        function loadAdminPanel(role) {
+        function openAdmin(role) {
             document.getElementById('gateway').style.display = 'none';
-            document.getElementById('entry').style.display = 'none';
-            document.getElementById('exam').style.display = 'none';
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
             document.getElementById('admin').style.display = 'block';
-            document.getElementById('admH').innerText = "مركز التحكم - " + role;
+            document.getElementById('admRole').innerText = "تم تسجيل الدخول بصلاحية: " + role;
             
-            const controls = document.getElementById('adminControls');
+            const zone = document.getElementById('adminZones');
             if(role === 'الرئيس') {
-                controls.innerHTML = `
-                    <p>أدخل الأسئلة (سؤال في كل سطر)</p>
-                    <textarea id="qInput" rows="6" placeholder="اكتب الأسئلة هنا...">${myQs.join('\n')}</textarea>
-                    <button class="btn btn-gold" onclick="saveQs()">حفظ وتحديث بنك الأسئلة</button>
-                    <button class="btn" style="background:var(--r);" onclick="clearAll()">تصفير الاختبار</button>
+                zone.innerHTML = `
+                    <input type="text" id="setSub" placeholder="تغيير مسمى الدورة الحالي">
+                    <button class="btn btn-gold" onclick="updateSub()">تحديث المسمى</button>
+                    <hr style="border: 0; border-top: 1px solid #222; margin: 25px 0;">
+                    <p style="text-align:right; font-size:0.8rem; color:var(--p);">حقن الأسئلة (سؤال في كل سطر):</p>
+                    <textarea id="qsInput" rows="8" placeholder="اكتب الأسئلة هنا...">${questions.join('\n')}</textarea>
+                    <button class="btn btn-gold" onclick="injectQs()">حفظ وحقن الأسئلة</button>
+                    <button class="btn btn-red" onclick="toggleSystem()">قفل / فتح المنظومة</button>
                 `;
             } else {
-                controls.innerHTML = `<p>صلاحيات العضو: مراقبة النظام فقط نشطة.</p>`;
+                zone.innerHTML = `<div class="q-card" style="text-align:center;">صلاحيات العضو تتيح لك مراقبة حالة النظام فقط.</div>`;
             }
         }
 
-        function saveQs() {
-            const lines = document.getElementById('qInput').value.split('\n').filter(l => l.trim() !== "");
-            localStorage.setItem('savedQs', JSON.stringify(lines));
-            showA("تم تحديث بنك الأسئلة");
+        function updateSub() { localStorage.setItem('sys_sub', document.getElementById('setSub').value); notify("تم تحديث المسمى"); location.reload(); }
+        function injectQs() {
+            const newQs = document.getElementById('qsInput').value.split('\n').filter(l => l.trim() !== "");
+            localStorage.setItem('marvel_qs', JSON.stringify(newQs));
+            notify("تم حقن الأسئلة في الدستور بنجاح");
             setTimeout(() => location.reload(), 1000);
         }
+        function toggleSystem() {
+            const lock = localStorage.getItem('sys_lock') === 'true';
+            localStorage.setItem('sys_lock', !lock);
+            notify(lock ? "تم فتح النظام للعموم" : "تم إغلاق النظام بنجاح");
+        }
 
-        function clearAll() { if(confirm("هل تريد مسح كل الأسئلة؟")) { localStorage.clear(); location.reload(); } }
+        // تشغيل الاختبار
+        function startExam() {
+            renderQuestion();
+            let time = 1200;
+            const tInterval = setInterval(() => {
+                let m = Math.floor(time/60), s = time%60;
+                document.getElementById('timer').innerText = `${m}:${s<10?'0':''}${s}`;
+                if(time-- <= 0) { clearInterval(tInterval); location.reload(); }
+            }, 1000);
+        }
 
-        // نظام تشغيل الاختبار
-        function loadTest() {
-            if(cur < myQs.length) {
-                document.getElementById('qArea').innerHTML = `
-                    <div class="q-item">
-                        <small style="color:var(--p)">المهمة ${cur+1} من ${myQs.length}</small>
-                        <h3 style="margin-top:10px;">${myQs[cur]}</h3>
-                        <div class="opt" onclick="sel()">الخيار الأول (اضغط للاختيار)</div>
-                        <div class="opt" onclick="sel()">الخيار الثاني (اضغط للاختيار)</div>
-                        <div class="opt" onclick="sel()">الخيار الثالث (اضغط للاختيار)</div>
+        function renderQuestion() {
+            if(currentIdx < questions.length) {
+                document.getElementById('examContent').innerHTML = `
+                    <div class="q-card">
+                        <small style="color:var(--p)">المهمة ${currentIdx+1} من ${questions.length}</small>
+                        <h3 style="margin-top:10px; line-height:1.6;">${questions[currentIdx]}</h3>
+                        <div class="opt-btn" onclick="selectOpt(this)">الخيار العسكري الأول</div>
+                        <div class="opt-btn" onclick="selectOpt(this)">الخيار العسكري الثاني</div>
+                        <div class="opt-btn" onclick="selectOpt(this)">الخيار العسكري الثالث</div>
                     </div>
                 `;
                 document.getElementById('nextBtn').style.display = 'none';
             } else {
-                document.getElementById('qArea').innerHTML = "<h2>تم إنهاء الاختبار بنجاح.</h2><p>سيتم إرسال تقريرك للقيادة.</p>";
+                document.getElementById('examContent').innerHTML = `<h2>تم إكمال المهمة بنجاح</h2><p>سيتم مراجعة إجاباتك من قبل هيئة التنظيم.</p>`;
                 document.getElementById('nextBtn').style.display = 'none';
-                setTimeout(() => location.reload(), 4000);
+                setTimeout(() => location.reload(), 3500);
             }
         }
 
-        function sel() { document.getElementById('nextBtn').style.display = 'block'; }
-        function nextQ() { cur++; loadTest(); }
+        function selectOpt(el) {
+            document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function nextStep() { currentIdx++; renderQuestion(); }
+
+        window.onload = () => {
+            const sub = localStorage.getItem('sys_sub');
+            if(sub) document.getElementById('displaySubtitle').innerText = sub;
+        };
     </script>
 </body>
 </html>
