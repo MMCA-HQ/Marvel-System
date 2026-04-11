@@ -19,13 +19,12 @@
             overflow: hidden; transition: 0.3s;
         }
 
-        /* العين الحمراء - كاشف الخروج */
         body.alert-border { border: 10px solid var(--red); box-shadow: inset 0 0 50px var(--red); }
 
-        .section { display: none; width: 100%; max-width: 500px; padding: 20px; animation: fadeIn 0.5s; }
+        .section { display: none; width: 100%; max-width: 600px; padding: 20px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* التنبيهات السيادية */
+        /* نظام التنبيهات السيادية */
         #marvelAlert {
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(13, 13, 18, 0.98); border: 1px solid var(--primary);
@@ -33,8 +32,6 @@
             box-shadow: 0 0 20px var(--primary); text-align: center; font-weight: bold;
         }
 
-        /* واجهة الدخول */
-        #entry { display: block; text-align: center; }
         .marvel-box {
             background: var(--card); padding: 40px; border-radius: 30px;
             border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9);
@@ -45,13 +42,12 @@
         .opt-btn {
             display: block; width: 100%; padding: 14px; margin: 10px 0;
             background: #000; border: 1px solid #333; color: white;
-            border-radius: 10px; cursor: pointer; transition: 0.3s; font-family: 'Cairo';
+            border-radius: 10px; cursor: pointer; transition: 0.3s; font-family: 'Cairo'; text-align: right;
         }
-        .opt-btn:hover, .opt-btn.active { border-color: var(--primary); background: rgba(0,212,255,0.05); }
+        .opt-btn:hover, .opt-btn.active { border-color: var(--primary); background: rgba(0,212,255,0.1); }
 
-        /* المدخل السري */
+        /* التحكم الإداري */
         #adminGateway { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 8000; justify-content: center; align-items: center; }
-        
         input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; text-align: center; font-family: 'Cairo'; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; }
 
@@ -64,43 +60,34 @@
     <div id="marvelAlert">نظام مارفل السيادي</div>
 
     <div id="entry" class="section">
-        <div class="marvel-box">
+        <div class="marvel-box" style="text-align: center;">
             <div style="color: var(--primary); font-weight: bold; font-size: 0.9rem;">هيئة تنظيم الدورات العسكرية</div>
             <h1 style="font-size: 3rem; margin: 5px 0;">دولة مارفل</h1>
-            <div id="subText" style="color: #555; font-weight: bold; margin-bottom: 30px;">النظام الموحد للاختبارات الإلكترونية</div>
+            <div id="subText" style="color: #666; font-weight: bold; margin-bottom: 30px;">النظام الموحد للاختبارات الإلكترونية</div>
             <button class="btn" style="background: #5865F2; color: white;" onclick="verifyUser()">التحقق من الهوية الرقمية</button>
         </div>
     </div>
 
     <div id="exam" class="section">
-        <div id="timer" style="position:fixed; top:20px; left:20px; font-weight:900; color:var(--primary); font-size:1.4rem;">10:00</div>
-        <div id="step" style="font-size: 0.8rem; color: #444;">المهمة 1 من 4</div>
+        <div id="timer" style="position:fixed; top:20px; left:20px; font-weight:900; color:var(--primary); font-size:1.4rem;">20:00</div>
+        <div id="step" style="font-size: 0.8rem; color: #555;">المهمة 1 من 50</div>
         <div class="q-box">
-            <h3 id="qText">جاري تحميل البيانات...</h3>
+            <h3 id="qText">جاري تحميل البيانات العسكرية...</h3>
             <div id="opts"></div>
         </div>
         <button id="next" class="btn" style="background: var(--primary); color: #000; display: none;" onclick="goNext()">المهمة التالية</button>
     </div>
 
     <div id="adminPanel" class="section" style="max-width: 800px;">
-        <h2 style="border-bottom: 2px solid var(--gold); padding-bottom: 10px;">مركز السيطرة السيادي</h2>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div class="marvel-box" style="padding: 20px;">
-                <h3>⚙️ التحكم</h3>
-                <input type="text" id="newTitle" placeholder="تغيير مسمى الدورة">
-                <button class="btn" style="background: var(--gold);" onclick="setVal('title', 'newTitle')">تحديث المسمى</button>
+        <h2 id="adminHeader" style="border-bottom: 2px solid var(--gold); padding-bottom: 10px;">مركز السيطرة</h2>
+        <div id="adminContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
             </div>
-            <div class="marvel-box" style="padding: 20px;">
-                <h3>🚫 السيادة</h3>
-                <button class="btn" style="background: var(--red); color: white;" onclick="toggleLock()">قفل / فتح النظام</button>
-                <button class="btn" style="background: #333; color: white; margin-top: 10px;" onclick="resetAll()">تصفير النظام</button>
-            </div>
-        </div>
+        <button class="btn" style="margin-top: 20px; background: #222; color: white;" onclick="location.reload()">تسجيل خروج</button>
     </div>
 
     <div id="adminGateway">
         <div style="text-align: center;">
-            <div style="color: var(--primary); margin-bottom: 10px;">أدخل كود التفويض</div>
+            <div style="color: var(--primary); margin-bottom: 15px;">نظام الصلاحيات السيادي</div>
             <input type="password" id="pass" maxlength="4" oninput="checkPass()" style="font-size: 2.5rem; letter-spacing: 15px; width: 250px;">
         </div>
     </div>
@@ -110,27 +97,24 @@
     </footer>
 
     <script>
-        // درع الحماية
+        // 🛡️ درع الحماية العسكري
         document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 67 || e.keyCode == 85))) return false; };
         window.onblur = () => document.body.classList.add('alert-border');
         window.onfocus = () => document.body.classList.remove('alert-border');
 
-        // نظام التنبيهات
         function showMsg(m) {
             const a = document.getElementById('marvelAlert');
             a.innerText = m; a.style.display = 'block';
             setTimeout(() => a.style.display = 'none', 3000);
         }
 
-        // بدء التحقق
         function verifyUser() {
             if(localStorage.getItem('lock') === 'true') return showMsg("المنظومة مغلقة بأمر الإدارة");
             document.getElementById('footer').style.display = 'block';
-            showMsg("تم التحقق بنجاح. النظام جاهز.");
+            showMsg("تم التحقق بنجاح. انقر مرتين بالأسفل للدخول السري.");
             setTimeout(startTest, 2000);
         }
 
-        // الدخول السري
         document.getElementById('trigger').ondblclick = () => {
             document.getElementById('adminGateway').style.display = 'flex';
             document.getElementById('pass').focus();
@@ -138,19 +122,47 @@
 
         function checkPass() {
             const p = document.getElementById('pass').value;
-            if(p === '9999') {
-                document.getElementById('adminGateway').style.display = 'none';
-                document.getElementById('entry').style.display = 'none';
-                document.getElementById('adminPanel').style.display = 'block';
+            if(p === '9999') loadAdmin('President');
+            else if(p === '0101') loadAdmin('Member');
+        }
+
+        function loadAdmin(role) {
+            document.getElementById('adminGateway').style.display = 'none';
+            document.getElementById('entry').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            const content = document.getElementById('adminContent');
+            
+            if(role === 'President') {
+                document.getElementById('adminHeader').innerText = "مركز السيطرة (الرئيس)";
+                content.innerHTML = `
+                    <div class="marvel-box" style="padding: 20px;">
+                        <h3>⚙️ الإعدادات</h3>
+                        <input type="text" id="newTitle" placeholder="مسمى الدورة">
+                        <button class="btn" style="background: var(--gold);" onclick="setVal('title', 'newTitle')">تحديث</button>
+                    </div>
+                    <div class="marvel-box" style="padding: 20px;">
+                        <h3>🚫 السيادة</h3>
+                        <button class="btn" style="background: var(--red); color: white;" onclick="toggleLock()">قفل / فتح النظام</button>
+                    </div>
+                `;
+            } else {
+                document.getElementById('adminHeader').innerText = "بوابة الأعضاء (مراقب)";
+                content.innerHTML = `
+                    <div class="marvel-box" style="padding: 20px;">
+                        <h3>📋 مراقبة</h3>
+                        <p>صلاحيات العرض فقط نشطة.</p>
+                        <button class="btn" style="background: var(--primary); color: black;">قائمة الطلاب</button>
+                    </div>
+                `;
             }
         }
 
-        // نظام الاختبار
-        const data = [
+        // 📝 نظام الـ 50 سؤالاً (نماذج)
+        const questions = [
             {q: "ما هو الإجراء الأول عند رصد متسلل؟", o: ["الاشتباك", "التبليغ والتأمين", "الانسحاب"]},
-            {q: "من يملك حق تعميد النتائج النهائية؟", o: ["الأعضاء", "الرئيس فقط", "المتقدم"]},
-            {q: "ما هو تصنيف دولة مارفل؟", o: ["دولة عسكرية", "دولة مدنية", "دولة تجارية"]},
-            {q: "ماذا تفعل في حال تعطل اللاسلكي؟", o: ["مغادرة الموقع", "استخدام الإشارات البديلة", "النوم"]}
+            {q: "رتبة ضابط أمن الوزارات تتبع أي قطاع؟", o: ["الشرطة", "رئاسة الوزراء", "الجيش"]},
+            {q: "ما هو تصنيف دولة مارفل؟", o: ["دولة عسكرية", "دولة مدنية", "تجارية"]},
+            // يمكنك إضافة الـ 50 سؤالاً هنا بنفس النمط
         ];
 
         let cur = 0;
@@ -158,7 +170,7 @@
             document.getElementById('entry').style.display = 'none';
             document.getElementById('exam').style.display = 'block';
             loadQ();
-            let s = 600;
+            let s = 1200; // 20 دقيقة
             setInterval(() => {
                 let m = Math.floor(s/60), sec = s%60;
                 document.getElementById('timer').innerText = `${m}:${sec<10?'0':''}${sec}`;
@@ -167,12 +179,12 @@
         }
 
         function loadQ() {
-            document.getElementById('step').innerText = `المهمة ${cur+1} من ${data.length}`;
-            document.getElementById('qText').innerText = data[cur].q;
+            document.getElementById('step').innerText = `المهمة ${cur+1} من ${questions.length}`;
+            document.getElementById('qText').innerText = questions[cur].q;
             const box = document.getElementById('opts');
             box.innerHTML = "";
             document.getElementById('next').style.display = 'none';
-            data[cur].o.forEach(opt => {
+            questions[cur].o.sort(() => Math.random() - 0.5).forEach(opt => {
                 const b = document.createElement('button');
                 b.className = 'opt-btn'; b.innerText = opt;
                 b.onclick = () => {
@@ -185,17 +197,15 @@
         }
 
         function goNext() {
-            if(cur < data.length - 1) { cur++; loadQ(); }
-            else { showMsg("تم إرسال التقرير النهائي"); setTimeout(() => location.reload(), 2000); }
+            if(cur < questions.length - 1) { cur++; loadQ(); }
+            else { showMsg("تم إرسال التقرير النهائي للقيادة"); setTimeout(() => location.reload(), 2000); }
         }
 
-        // وظائف الإدارة
         function setVal(k, i) { localStorage.setItem(k, document.getElementById(i).value); showMsg("تم التحديث"); location.reload(); }
         function toggleLock() { 
             const l = localStorage.getItem('lock') === 'true';
             localStorage.setItem('lock', !l); showMsg(l ? "تم فتح النظام" : "تم قفل النظام"); 
         }
-        function resetAll() { if(confirm("تصفير؟")) { localStorage.clear(); location.reload(); } }
 
         window.onload = () => {
             const t = localStorage.getItem('title');
