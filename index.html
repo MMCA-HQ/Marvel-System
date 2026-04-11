@@ -3,375 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة هيئة تنظيم الدورات | دولة مارفل (النسخة الفعالة)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* === الألوان والشكل (بناءً على الصورتين) === */
-        :root { 
-            --p: #00d4ff; /* الأزرق المضيء من image_1.png */
-            --g: #ffcc00; /* الذهبي للأمور الهامة */
-            --r: #ff4b2b; /* الأحمر للعين الحمراء والغش */
-            --bg: #050507; /* الخلفية المظلمة من image_1.png */
-            --c: #0d0d12; /* لون الحاوية الأغمق من image_1.png */
-        }
-        body { 
-            margin: 0; padding: 0; font-family: 'Cairo', sans-serif; 
-            background: var(--bg); color: white; min-height: 100vh; 
-            display: flex; justify-content: center; align-items: center; 
-            overflow: hidden; transition: 0.3s; user-select: none; 
-        }
-        body.alert-border { border: 15px solid var(--r); box-shadow: inset 0 0 100px var(--r); }
-        .container { 
-            background: var(--c); padding: 50px; border-radius: 30px; 
-            border: 1px solid rgba(0, 212, 255, 0.2); box-shadow: 0 0 80px rgba(0,0,0,1); 
-            width: 700px; text-align: center; position: relative; animation: fadeIn 0.6s; 
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .hidden { display: none !important; }
-        .btn { width: 100%; padding: 20px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 20px; font-size: 1.2rem; border-bottom: 4px solid rgba(0,0,0,0.3); }
-        .btn-gold { background: var(--g); color: black; border-bottom: 4px solid rgba(0,0,0,0.1); }
-        .btn-red { background: var(--r); color: white; }
-        .btn:active { transform: translateY(2px); border-bottom-width: 2px; }
-        input, select, textarea { width: 100%; padding: 18px; margin: 15px 0; border-radius: 12px; border: 1px solid #222; background: #000; color: white; box-sizing: border-box; text-align: right; font-family: 'Cairo'; font-size: 1.1rem; }
-        #timer { position: fixed; top: 30px; left: 30px; color: var(--p); font-weight: 900; font-size: 2.2rem; text-shadow: 0 0 15px var(--p); z-index: 1000; }
-        .q-card { background: #111; padding: 40px; border-radius: 25px; border-right: 10px solid var(--p); text-align: right; margin-top: 35px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
-        .opt-btn { display: block; width: 100%; background: #000; padding: 20px; margin: 15px 0; border-radius: 12px; border: 1px solid #222; color: white; text-align: right; cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
-        .opt-btn:hover, .opt-btn.active { border-color: var(--p); background: rgba(0, 212, 255, 0.1); transform: scale(1.02); }
-        footer { position: fixed; bottom: 20px; width: 100%; text-align: center; opacity: 0.05; cursor: pointer; font-size: 0.9rem; transition: 0.3s; }
-        footer:hover { opacity: 0.8; color: var(--p); }
-        #mAlert { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(13, 13, 18, 0.98); border: 2px solid var(--p); padding: 15px 40px; border-radius: 15px; z-index: 9999; box-shadow: 0 0 30px var(--p); font-weight: 900; }
-        /* === شاشات التحكم === */
-        #admin-panel { text-align: right; margin-top: 20px; }
-        .admin-zone { display: none; margin-bottom: 30px; }
-        .admin-active { display: block; }
-        .log-container { background: #000; border: 1px solid #222; border-radius: 10px; height: 300px; overflow-y: scroll; padding: 15px; font-size: 0.8rem; font-family: 'Courier New', monospace; color: lime; text-align: left; direction: ltr; }
-    </style>
+    <title>هيئة تنظيم الدورات العسكرية | دولة مارفل</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 </head>
-<body oncontextmenu="return false;" oncopy="return false;" onpaste="return false;">
+<body class="military-theme" oncontextmenu="return false" onkeydown="return disableF12(event)">
 
-    <div id="mAlert">تنبيه النظام السيادي</div>
-    <div id="timer" class="hidden">20:00</div>
+    <div id="auth-gateway" class="gateway-overlay">
+        <div class="glass-panel">
+            <h1 class="glitch-text">النظام الموحد للاختبارات الإلكترونية</h1>
+            <p class="sub-title">دولة مارفل - الهيئة الإدارية</p>
+            <button id="discord-login-btn" onclick="startDiscordAuth()">التحقق من الهوية الرقمية</button>
+        </div>
+    </div>
 
-    <div id="entry-page" class="container">
-        <div style="font-size: 0.8rem; color: #555; margin-bottom: 10px;">هيئة تنظيم الدورات العسكرية</div>
-        <h1 style="color: var(--p); font-size: 4rem; margin: 0; font-weight: 900;">دولة مارفل</h1>
-        <p style="color: #666; font-weight: bold; margin-bottom: 30px;">النظام الموحد للاختبارات الإلكترونية</p>
+    <main id="main-system" style="display: none;">
         
-        <div id="verify-section">
-            <button class="btn" onclick="requestDiscordVerify()">التحقق من الهوية الرقمية</button>
-        </div>
-
-        <div id="loading-section" class="hidden">
-            <p id="load-status">جاري فحص الملفات الأمنية...</p>
-            <div style="width:50px; height:50px; border:5px solid #111; border-top-color:var(--p); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 20px;"></div>
-            <button class="btn" style="background:transparent; border:1px solid #111; color:#1a1a1a; font-size:10px;" onclick="goToData()">ADMIN_BYPASS</button>
-        </div>
-    </div>
-
-    <div id="data-page" class="container hidden">
-        <h2 style="margin-bottom: 25px; color: var(--p);">تعبئة السجل العسكري</h2>
-        <form onsubmit="event.preventDefault(); submitFinalDataAndGo();">
-            <input type="text" id="userName" placeholder="الاسم كامل" required>
-            <input type="text" id="userCode" placeholder="الكود العسكري" required>
-            <select id="userRank" required>
-                <option value="">اختر الرتبة الحالية</option>
-                <option>ملازم</option>
-                <option>ملازم أول</option>
-                <option>نقيب</option>
-                <option>رائد</option>
-            </select>
-            <button type="submit" class="btn btn-gold">بدء حقن المهام الميدانية</button>
-        </form>
-    </div>
-
-    <div id="exam-page" class="container hidden" style="width: 850px;">
-        <div id="exam-header">
-            <div style="font-size: 0.9rem; color: #777;">هيئة تنظيم الدورات العسكرية</div>
-            <h1 style="color: var(--p); margin: 5px 0;">دولة مارفل</h1>
-            <p id="examSub" style="color:var(--g)">دورة مركز العمليات</p>
-        </div>
-        <div id="qContent"></div>
-        <button id="nextBtn" class="btn btn-gold" style="display:none;" onclick="nextStep()">المهمة التالية</button>
-    </div>
-
-    <div id="member-page" class="container hidden" style="width: 850px;">
-        <h2 style="color: var(--p);">لوحة الأعضاء الرسميّين</h2>
-        <div id="requestsZone" class="q-card">
-            <h3>طلبات الانضمام (مراقبة حية)</h3>
-            <p>لا توجد طلبات معلقة حالياً.</p>
-        </div>
-        <div class="q-card">
-            <h3>مراقبة الجلسات</h3>
-            <p>أنت متصل بالمنظومة السيادية.</p>
-        </div>
-        <button class="btn" style="background:#222;" onclick="location.reload()">خروج</button>
-    </div>
-
-    <div id="admin-page" class="container hidden" style="width: 1000px;">
-        <h2 style="color: var(--g);">مركز تحكم الرئيس القائد (9999)</h2>
-        
-        <div class="q-card" style="text-align: right;">
-            <label>مسمى الدورة:</label>
-            <input type="text" id="newExamSub" placeholder="مثلاً: دورة القوات الخاصة">
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-gold" onclick="updateExamSub()">تحديث المسمى</button>
-                <button class="btn" style="background:#00d4ff; color:black; font-weight:900;" onclick="sealResults()">التعميد بالختم الأزرق</button>
+        <section id="commander-section" class="system-page" style="display: none;">
+            <header class="page-header">
+                <h2>لوحة السيادة الإدارية (الرئيس)</h2>
+                <div class="status-bar">الحالة: متصل | الرتبة: قيادة عليا</div>
+            </header>
+            <div class="admin-controls">
+                <button class="panic-btn" onclick="globalLock()">قفل النظام الشامل</button>
+                <button class="reset-btn" onclick="factoryReset()">تصفير المنظومة</button>
             </div>
-        </div>
+            <div id="logs-container" class="logs-grid"></div>
+        </section>
 
-        <div class="q-card" style="text-align: right;">
-            <h3>حقن مهمة (سؤال) جديدة</h3>
-            <select id="newQType" onchange="toggleMultiInputs()">
-                <option value="multi">اختيار من متعدد</option>
-                <option value="text">مقالي (كتابة تقرير)</option>
-            </select>
-            <input type="text" id="newQTitle" placeholder="نص المهمة">
-            <input type="number" id="newQTime" placeholder="المدة الزمنية للسؤال بالدقائق (مثلاً: 5)">
-            <div id="multiInputsAdmin">
-                <input type="text" id="adminO1" placeholder="الخيار الأول (الصحيح دائماً)">
-                <input type="text" id="adminO2" placeholder="الخيار الثاني">
-                <input type="text" id="adminO3" placeholder="الخيار الثالث">
+        <section id="staff-section" class="system-page" style="display: none;">
+            <h2>بوابة هيئة الإشراف (الأعضاء)</h2>
+            <div class="live-monitor">
+                <h3>مراقب الجلسات الحية</h3>
+                <ul id="students-list"></ul>
             </div>
-            <button class="btn btn-gold" onclick="injectQuestion()">حفظ وحقن المهمة</button>
-        </div>
+        </section>
 
-        <div class="q-card" style="text-align: right;">
-            <h3>التحكم الشامل في الطلبات</h3>
-            <p>الطلاب قيد الانتظار: <span id="adminPendingCount">0</span></p>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-gold" onclick="actionAllRequests('قبول')">قبول الكل</button>
-                <button class="btn btn-red" onclick="actionAllRequests('رفض')">رفض الكل</button>
+        <section id="exam-section" class="system-page" style="display: none;">
+            <div class="exam-header">
+                <div class="military-id">هيئة تنظيم الدورات العسكرية</div>
+                <div id="exam-timer" class="timer">00:00</div>
             </div>
-        </div>
-
-        <div class="q-card" style="text-align: right;">
-            <h3>سجل الرقابة الصارمة (Logs)</h3>
-            <select id="logFilter" onchange="filterLogsAdmin()">
-                <option value="all">عرض كافة اللوقات</option>
-                <option value="دخول_خروج_اختبار">لوق دخول وخروج الاختبار</option>
-                <option value="دخول_خروج_اعضاء">لوق دخول وخروج الأعضاء</option>
-                <option value="دخول_خروج_رئيس">لوق دخول وخروج الرئيس</option>
-                <option value="قبول_رفض_طلبات">لوق قبول ورفض الطلبات</option>
-                <option value="غش">لوق الغش والمخالفات</option>
-                <option value="تعديلات_اقسام">لوق تعديلات الأقسام</option>
-                <option value="طوارئ">لوق الطوارئ والقفل</option>
-            </select>
-            <div id="adminLogContainer" class="log-container">
+            <div id="progress-bar-container">
+                <div id="progress-fill"></div>
+            </div>
+            <div id="question-area">
                 </div>
-        </div>
+            <aside class="military-notes">
+                <h4>المسودة العسكرية</h4>
+                <textarea placeholder="اكتب ملاحظاتك هنا..."></textarea>
+            </aside>
+        </section>
 
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-red" onclick="resetAllSystem()">تصفير المنظومة بالكامل</button>
-            <button class="btn btn-gold" id="lockSysBtn" onclick="toggleSystemLock()">قفل النظام الشامل</button>
-            <button class="btn" style="background:#222;" onclick="location.reload()">خروج آمن</button>
-        </div>
-    </div>
+    </main>
 
-    <div id="gateway" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.99); z-index:10000; justify-content:center; align-items:center;">
-        <input type="password" id="admCode" placeholder="••••" maxlength="4" oninput="checkAdm()" style="font-size:5rem; width:300px; background:none; border:none; border-bottom:2px solid var(--p); color:var(--p); text-align:center; letter-spacing:15px; user-select: text;">
-    </div>
+    <footer id="secret-footer" style="opacity: 0;">
+        <p>هيئة تنظيم الدورات العسكرية © 2026</p>
+        <div id="secret-trigger" ondblclick="activateSecretAdmin()"></div>
+    </footer>
 
-    <footer id="globalFooter" class="hidden">© جميع الحقوق محفوظة لهيئة تنظيم الدورات العسكرية - دولة مارفل</footer>
+    <audio id="radio-noise" src="assets/radio_chatter.mp3" loop></audio>
+    <audio id="alert-sound" src="assets/alert.mp3"></audio>
 
-    <script>
-        // === الذاكرة السيادية ===
-        let globalLogs = JSON.parse(localStorage.getItem('m_logs')) || [];
-        let questionsBank = JSON.parse(localStorage.getItem('m_questions')) || [
-            {t: "ما هو الإجراء الأول عند رصد تلاعب أمني في منطقة العمليات؟", ty: "multi", o: ["تقدير الموقف وإبلاغ القيادة", "التحرك الفردي فوراً", "الانتظار"], time: 5}
-        ];
-        let currentIdx = 0;
-        let examTimer; 
-        let timeLeft = 0; 
-        let verifiedOnDiscord = false;
-        let sysLocked = localStorage.getItem('m_locked') === 'true';
-
-        // === نظام الحماية (الدرع البرمجي) ===
-        document.onkeydown = (e) => { 
-            if (e.keyCode == 123 || (e.ctrlKey && e.keyCode == 85) || (e.ctrlKey && e.shiftKey && e.keyCode == 73) || (e.ctrlKey && e.keyCode == 67)) {
-                logEvent("محاولة_تلاعب", "محاولة استخدام اختصارات المطورين F12/Ctrl+U/Ctrl+C");
-                return false; 
-            } 
-        };
-        window.onblur = () => { 
-            if (examTimer) {
-                document.body.classList.add('alert-border'); 
-                notify("تحذير سيادي: تم رصد محاولة خروج من النافذة!");
-                logEvent("غش", "الطالب غادر نافذة الاختبار أثناء المهمة.");
-            }
-        };
-        window.onfocus = () => { document.body.classList.remove('alert-border'); };
-
-        // === أنظمة أساسية وراديو ===
-        function notify(m) { const a = document.getElementById('mAlert'); a.innerText = m; a.style.display = 'block'; setTimeout(()=>a.style.display='none', 3000); }
-        function showPage(id) { document.querySelectorAll('.container').forEach(c=>c.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
-        function logEvent(ty, desc) { const log = {ty:ty, desc:desc, t:new Date().toISOString()}; globalLogs.push(log); localStorage.setItem('m_logs', JSON.stringify(globalLogs)); }
-
-        // === واجهة التحقق والدخول ===
-        function requestDiscordVerify() {
-            logEvent("دخول_خروج_اختبار", "محاولة تسجيل دخول عبر Discord");
-            document.getElementById('verify-section').classList.add('hidden');
-            document.getElementById('loading-section').classList.remove('hidden');
-            let status = document.getElementById('load-status');
-            const steps = ["فحص الرتبة...", "تأمين الجلسة...", "التحقق من الدستور...", "تم قبول الهوية!"];
-            let stepIdx = 0;
-            const interval = setInterval(() => {
-                status.innerText = steps[stepIdx++];
-                if (stepIdx >= steps.length) {
-                    clearInterval(interval);
-                    discordVerifiedSuccess();
-                }
-            }, 1000);
-        }
-
-        function discordVerifiedSuccess() {
-            verifiedOnDiscord = true;
-            notify("تم التحقق؛ بوابة السجل العسكري مفتوحة.");
-            // تفعيل التمويه الإداري بعد التحقق
-            const f = document.getElementById('globalFooter');
-            f.classList.remove('hidden');
-            f.innerText = "هيئة تنظيم الدورات العسكرية - دولة مارفل | © جميع الحقوق محفوظة";
-            f.ondblclick = () => { document.getElementById('gateway').style.display='flex'; document.getElementById('admCode').focus(); };
-            goToData();
-        }
-
-        function goToData() { showPage('data-page'); }
-
-        // === الأكواد السرية (Gateway) ===
-        function checkAdm() {
-            const code = document.getElementById('admCode').value;
-            if (sysLocked && code !== '9999') { notify("المنظومة مقفلة بأمر الرئيس."); return; }
-            if (code === '9999') {
-                logEvent("دخول_خروج_رئيس", "دخول الرئيس القائد");
-                document.getElementById('gateway').style.display='none';
-                showPage('admin-page');
-                updateAdminPanel();
-            } else if (code === '0101') {
-                logEvent("دخول_خروج_اعضاء", "دخول عضو رسمي");
-                document.getElementById('gateway').style.display='none';
-                showPage('member-page');
-            }
-        }
-
-        // === صفحة الاختبار (المهمات) ===
-        function startExam() {
-            if (!verifiedOnDiscord) { notify("يجب التحقق من الهوية الرقمية أولاً."); return; }
-            if (sysLocked) { notify("المنظومة مقفلة بأمر القيادة العليا."); return; }
-            const userName = document.getElementById('userName').value;
-            logEvent("دخول_خروج_اختبار", `الطالب [${userName}] بدأ الاختبار.`);
-            showPage('exam-page');
-            document.getElementById('timer').classList.remove('hidden');
-            requestFullScreenMode(); // عزل تقني
-            renderQuestion();
-            examTimer = setInterval(handleExamTime, 1000);
-        }
-
-        function renderQuestion() {
-            const q = questionsBank[currentIdx];
-            timeLeft = q.time * 60; // تحديد المهلة الأخيرة بناءً على مهلة السؤال
-            let h = `<div class="q-card"><small style="color:var(--p)">مهمة رقم ${currentIdx+1}</small><h3>${q.t}</h3>`;
-            if (q.ty === 'multi') {
-                // تعدد النماذج الذكي (خلط عشوائي)
-                q.o.sort(()=>Math.random()-0.5).forEach(opt => {
-                    h += `<div class="opt-btn" onclick="selectOpt(this)">${opt}</div>`;
-                });
-            } else { h += `<textarea placeholder="اكتب التقرير الميداني هنا..." oninput="showNextBtn()"></textarea>`; }
-            // المسودة العسكرية (خاصة)
-            h += `<textarea placeholder="مسودة عسكرية خاصة..." style="font-size:0.8rem; margin-top:15px; border-color:#333;"></textarea>`;
-            document.getElementById('qContent').innerHTML = h + `</div>`;
-            document.getElementById('nextBtn').style.display = 'none';
-        }
-
-        function selectOpt(el) {
-            document.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('active'));
-            el.classList.add('active');
-            showNextBtn();
-        }
-
-        function showNextBtn() { document.getElementById('nextBtn').style.display = 'block'; }
-
-        function handleExamTime() {
-            let m = Math.floor(timeLeft / 60);
-            let s = timeLeft % 60;
-            document.getElementById('timer').innerText = `${m}:${s<10?'0':''}${s}`;
-            if (timeLeft <= 60 && timeLeft > 0) {
-                // مهلة الأخيرة وتنبيه لوني
-                document.getElementById('timer').style.color = var('--r');
-                if (timeLeft % 2 === 0) notify("تنبيه: دقيقة واحدة متبقية للمهمة!");
-            }
-            if (timeLeft <= 0) { 
-                logEvent("غش", `الطالب تجاوز المهلة الزمنية للمهمة رقم ${currentIdx+1}.`);
-                notify("تجاوزت الوقت المسموح للمهمة.");
-                nextStep(); 
-            }
-            timeLeft--;
-        }
-
-        function nextStep() {
-            if (currentIdx < questionsBank.length - 1) { currentIdx++; renderQuestion(); }
-            else { finishExam(); }
-        }
-
-        function finishExam() {
-            clearInterval(examTimer);
-            logEvent("لوق_اجابات_الطلاب", "الطالب أرسل إجاباته الميدانية.");
-            logEvent("دخول_خروج_اختبار", "الطالب أنهى الاختبار.");
-            showPage('entry-page');
-            document.getElementById('timer').classList.add('hidden');
-            notify("تم الانتهاء بنجاح، تم إرسال إجاباتك لسجل الرقابة.");
-            exitFullScreenMode();
-        }
-
-        // === أنظمة العزل الميداني ===
-        function requestFullScreenMode() { document.documentElement.requestFullscreen(); }
-        function exitFullScreenMode() { if (document.fullscreenElement) document.exitFullscreen(); }
-
-        // === لوحة تحكم الرئيس وميزات إضافية ===
-        function updateAdminPanel() {
-            if (sysLocked) { document.getElementById('lockSysBtn').innerText = "تفعيل المنظومة الشامل"; document.getElementById('lockSysBtn').style.background = var('--g'); }
-            else { document.getElementById('lockSysBtn').innerText = "قفل المنظومة الشامل"; document.getElementById('lockSysBtn').style.background = var('--r'); }
-            filterLogsAdmin(); // تحديث اللوقات في اللوحة
-        }
-
-        function toggleMultiInputs() { document.getElementById('multiInputsAdmin').style.display = document.getElementById('newQType').value === 'text' ? 'none' : 'block'; }
-
-        function injectQuestion() {
-            const qType = document.getElementById('newQType').value;
-            const qTitle = document.getElementById('newQTitle').value;
-            const qTime = parseInt(document.getElementById('newQTime').value);
-            const q = {t:qTitle, ty:qType, time: qTime};
-            if (qType === 'multi') { q.o = [document.getElementById('adminO1').value, document.getElementById('adminO2').value, document.getElementById('adminO3').value]; }
-            questionsBank.push(q); localStorage.setItem('m_questions', JSON.stringify(questionsBank));
-            logEvent("اضافات", `الرئيس أضاف مهمة جديدة: ${qTitle}`); notify("تم حقن المهمة في الدستور.");
-            updateAdminPanel();
-        }
-
-        function updateExamSub() { const s = document.getElementById('newExamSub').value; localStorage.setItem('m_exam_sub', s); logEvent("تعديلات_اقسام", `تعديل مسمى الدورة لـ [${s}]`); notify("تم تحديث مسمى الدورة."); }
-        function sealResults() { logEvent("قبول_رفض_طلبات", "الرئيس عمّد النتائج بالختم الأزرق."); notify("تم تعميد النتائج (توقيع صوتي)."); }
-        function actionAllRequests(type) { if (confirm(`هل أنت متأكد من ${type} كافة طلبات الانتظار؟`)) { logEvent("قبول_رفض_طلبات", `تمت ${type} كافة الطلبات قيد الانتظار.`); notify("تم تنفيذ الأمر الإداري."); } }
-        function filterLogsAdmin() {
-            const filter = document.getElementById('logFilter').value;
-            const logs = filter === 'all' ? globalLogs : globalLogs.filter(l=>l.ty === filter);
-            let html = "";
-            logs.sort((a,b)=>new Date(b.t)-new Date(a.t)).forEach(log => {
-                html += `[${log.t.replace('T', ' ').split('.')[0]}] | ${log.ty.toUpperCase()} | ${log.desc}\n`;
-            });
-            document.getElementById('adminLogContainer').innerText = html || "لا توجد لوقات لهذا القسم.";
-        }
-
-        function toggleSystemLock() { 
-            sysLocked = !sysLocked; localStorage.setItem('m_locked', sysLocked); 
-            logEvent("طوارئ", sysLocked ? "تم تفعيل القفل الشامل للمنظومة." : "تم إلغاء قفل المنظومة."); updateAdminPanel(); 
-        }
-        function resetAllSystem() { if (confirm("خطر: سيتم مسح كافة البيانات واللوقات والدستور. هل أنت متأكد؟")) { logEvent("طوارئ", "الرئيس صفر المنظومة بالكامل."); localStorage.clear(); location.reload(); } }
-
-        window.onload = () => { 
-            const s = localStorage.getItem('m_exam_sub'); if (s) document.getElementById('examSub').innerText = s; 
-            logEvent("دخول_خروج_اختبار", "واجهة الموقع الموحدة محملة.");
-        };
-    </script>
-    <style> 
-        @keyframes spin { to { transform: rotate(360deg); } } 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-    </style>
+    <script src="script.js"></script>
 </body>
 </html>
