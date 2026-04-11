@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هيئة تنظيم الدورات | دولة مارفل</title>
+    <title>منظومة الاختبارات | دولة مارفل</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary-glow: #00d4ff; --secondary-glow: #6a0dad; --bg-dark: #0a0a0c; --card-bg: #121217; --text-silver: #e0e0e0; }
-        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background-color: var(--bg-dark); color: var(--text-silver); display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0c 100%); }
-        .system-container { width: 450px; background: var(--card-bg); padding: 50px 40px; border-radius: 20px; border: 1px solid rgba(0, 212, 255, 0.2); box-shadow: 0 0 40px rgba(0, 0, 0, 0.7); text-align: center; position: relative; }
+        :root { --primary-glow: #00d4ff; --bg-dark: #0a0a0c; --card-bg: #121217; }
+        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background-color: var(--bg-dark); color: white; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0c 100%); }
+        .system-container { width: 450px; background: var(--card-bg); padding: 50px 40px; border-radius: 20px; border: 1px solid rgba(0, 212, 255, 0.2); box-shadow: 0 0 40px rgba(0, 0, 0, 0.7); text-align: center; }
         h1 { font-size: 3rem; font-weight: 900; margin: 5px 0; background: linear-gradient(to bottom, #ffffff 30%, #666666 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .course-name { color: var(--primary-glow); font-size: 1.4rem; font-weight: bold; margin-bottom: 25px; text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .course-name { color: var(--primary-glow); font-size: 1.4rem; font-weight: bold; margin-bottom: 25px; }
         .btn-discord { width: 100%; padding: 18px; background: #5865F2; border: none; border-radius: 12px; color: white; font-weight: 900; cursor: pointer; transition: 0.4s; font-family: 'Cairo'; }
-        .btn-discord:hover { background: #4752c4; box-shadow: 0 0 20px rgba(88, 101, 242, 0.4); }
-        #secretOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 100; justify-content: center; align-items: center; }
-        .secret-box { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--primary-glow); text-align: center; width: 320px; }
+        
+        /* نافذة إدخال كلمة المرور المخفية */
+        #secretOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+        .secret-box { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid var(--primary-glow); text-align: center; width: 300px; }
         .secret-box input { width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px; border: 1px solid #333; background: #000; color: var(--primary-glow); text-align: center; font-size: 1.2rem; outline: none; }
-        footer { position: absolute; bottom: 30px; text-align: center; width: 100%; }
-        .rights-1 { font-size: 0.9rem; color: #555; font-weight: bold; margin-bottom: 5px; }
-        .rights-2 { font-size: 0.8rem; color: #333; cursor: default; transition: 0.3s; user-select: none; }
+        
+        footer { position: absolute; bottom: 30px; text-align: center; width: 100%; line-height: 1.6; }
+        .rights-1 { font-size: 0.9rem; color: #555; font-weight: bold; }
+        .rights-2 { font-size: 0.8rem; color: #333; cursor: default; user-select: none; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -26,16 +28,14 @@
     <div class="system-container">
         <div style="color: #888; margin-bottom: 10px;">هيئة تنظيم الدورات العسكرية</div>
         <h1>دولة مارفل</h1>
-        <div class="course-name" id="displayCourseName">جاري تحميل البيانات...</div>
-        <p style="color: #666; margin-bottom: 40px;">النظام الموحد للاختبارات الإلكترونية</p>
-        <button class="btn-discord" onclick="mockAuth()">الولوج عبر الهوية الرقمية</button>
+        <div class="course-name" id="mainCourseDisplay">جاري التحميل...</div>
+        <button class="btn-discord" onclick="authDiscord()">الولوج عبر الهوية الرقمية</button>
     </div>
 
     <div id="secretOverlay">
         <div class="secret-box">
-            <div style="color: #666; font-size: 0.8rem;">نظام التحقق السيادي</div>
-            <input type="password" id="secretKey" placeholder="••••" oninput="validateSecret()">
-            <p style="font-size: 0.6rem; color: #333; margin-top: 10px;">سيتم التوجيه تلقائياً عند كتابة الكود الصحيح</p>
+            <div style="color: #666; font-size: 0.8rem;">نظام الصلاحيات العليا</div>
+            <input type="password" id="accessKey" placeholder="••••" oninput="checkKey()">
         </div>
     </div>
 
@@ -45,49 +45,32 @@
     </footer>
 
     <script>
-        let isAuth = false;
+        let isVerified = false;
 
-        // تحديث اسم الدورة من الذاكرة تلقائياً
-        function refreshCourseName() {
-            const savedName = localStorage.getItem('currentCourseName') || "لا توجد دورة نشطة";
-            document.getElementById('displayCourseName').innerText = savedName;
+        // تحديث اسم الدورة تلقائياً من الذاكرة
+        window.onload = function() {
+            document.getElementById('mainCourseDisplay').innerText = localStorage.getItem('marvelCourse') || "دورة تأسيسية";
+        };
+
+        function authDiscord() {
+            alert("تم التحقق من الحساب بنجاح.");
+            isVerified = true;
         }
 
-        window.onload = refreshCourseName;
-
-        // محاكاة تسجيل الدخول بالديسكورد
-        function mockAuth() {
-            alert("تم التحقق من الهوية الرقمية (Discord)");
-            isAuth = true;
-        }
-
-        // المدخل السري: النقر المزدوج على نص الهيئة في الحقوق بالأسفل
-        document.getElementById('secretTrigger').addEventListener('dblclick', function() {
-            if(isAuth) {
+        // المدخل السري: ضغطتين على "هيئة تنظيم الدورات العسكرية" في الحقوق
+        document.getElementById('secretTrigger').ondblclick = function() {
+            if(isVerified) {
                 document.getElementById('secretOverlay').style.display = 'flex';
-                document.getElementById('secretKey').focus();
+                document.getElementById('accessKey').focus();
             } else {
-                alert("يجب الولوج عبر الهوية الرقمية أولاً");
+                alert("يجب التحقق أولاً للوصول إلى بوابات الهيئة.");
             }
-        });
+        };
 
-        // فحص الأكواد والتوجيه
-        function validateSecret() {
-            const key = document.getElementById('secretKey').value;
-            if (key === '9999') {
-                window.location.href = "president_panel.html";
-            } else if (key === '0101') {
-                window.location.href = "members_panel.html";
-            }
-        }
-
-        // إغلاق النافذة السرية عند الضغط خارج المربع
-        window.onclick = function(event) {
-            const overlay = document.getElementById('secretOverlay');
-            if (event.target == overlay) {
-                overlay.style.display = "none";
-                document.getElementById('secretKey').value = "";
-            }
+        function checkKey() {
+            const key = document.getElementById('accessKey').value;
+            if (key === '9999') window.location.href = "president_panel.html";
+            else if (key === '0101') window.location.href = "members_panel.html";
         }
     </script>
 </body>
