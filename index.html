@@ -6,76 +6,96 @@
     <title>منظومة هيئة تنظيم الدورات | دولة مارفل</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #3d5afe; --bg: #0a0a0f; --card: #12121c; }
-        body {
-            margin: 0; font-family: 'Cairo', sans-serif;
-            background: var(--bg); color: white;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; overflow: hidden;
-        }
-        .marvel-card {
-            background: var(--card); padding: 40px; border-radius: 20px;
-            text-align: center; border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 350px;
-        }
-        .badge { border: 1px solid var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 5px; font-size: 0.8rem; margin-bottom: 20px; display: inline-block; }
-        h1 { font-size: 2.5rem; margin: 10px 0; font-weight: 900; }
-        p { color: #666; margin-bottom: 30px; font-size: 0.9rem; }
-        .btn {
-            background: var(--primary); color: white; border: none;
-            padding: 15px; width: 100%; border-radius: 12px;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 5px 15px rgba(61, 90, 254, 0.4);
-        }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(61, 90, 254, 0.6); }
-        
-        /* التنبيه المخصص */
-        #alertBox { display: none; position: fixed; top: 20px; background: #1a1a2e; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 10px; z-index: 1000; }
-
-        /* الأقسام المخفية */
-        .hidden-section { display: none; width: 90%; max-width: 600px; animation: fadeIn 0.5s; }
+        :root { --p: #00d4ff; --g: #ffcc00; --r: #ff4b2b; --bg: #050507; --c: #0d0d12; }
+        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: 0.3s; }
+        body.alert-border { border: 10px solid var(--r); box-shadow: inset 0 0 50px var(--r); }
+        .section { display: none; width: 100%; max-width: 500px; padding: 20px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        footer { position: fixed; bottom: 20px; color: #111; cursor: pointer; font-size: 0.7rem; user-select: none; }
+        #mAlert { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(13, 13, 18, 0.98); border: 1px solid var(--p); padding: 15px 40px; border-radius: 12px; z-index: 9999; box-shadow: 0 0 20px var(--p); text-align: center; font-weight: bold; }
+        .m-box { background: var(--c); padding: 40px; border-radius: 30px; border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9); text-align: center; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 20px; }
+        #gateway { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 8000; justify-content: center; align-items: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; text-align: center; font-family: 'Cairo'; }
+        footer { position: fixed; bottom: 20px; width: 100%; text-align: center; display: none; }
+        .rights { font-size: 0.8rem; color: #111; cursor: default; user-select: none; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-    <div id="alertBox">جاري معالجة البيانات...</div>
+    <div id="mAlert">نظام مارفل السيادي</div>
 
-    <div id="loginScreen">
-        <div class="marvel-card">
-            <div class="badge">نظام الهيئة الرقمي</div>
-            <h1>دولة مارفل</h1>
-            <p>يرجى إثبات الهوية للوصول للمنظومة</p>
-            <button class="btn" onclick="startSystem()">التحقق من الهوية الرقمية</button>
+    <div id="entry" class="section" style="display: block;">
+        <div class="m-box">
+            <div style="color: var(--p); font-weight: bold; font-size: 0.8rem; border: 1px solid var(--p); display: inline-block; padding: 2px 10px; border-radius: 5px;">نظام الهيئة الرقمي</div>
+            <h1 style="font-size: 3rem; margin: 10px 0;">دولة مارفل</h1>
+            <p style="color: #555; font-weight: bold;">يرجى إثبات الهوية للوصول للمنظومة</p>
+            <button class="btn" onclick="verify()">التحقق من الهوية الرقمية</button>
         </div>
     </div>
 
-    <div id="testScreen" class="hidden-section">
-        <h2 style="text-align: center;">بدء الاختبار العسكري</h2>
-        <div style="background: #111; padding: 20px; border-radius: 15px; border-right: 5px solid var(--primary);">
-            <p id="qText" style="color: white; font-size: 1.1rem;">جاري تحميل المهمة رقم 1...</p>
-            <div id="options">
-                </div>
+    <div id="exam" class="section">
+        <div class="m-box">
+            <h3 id="qText">جاري تحميل المهمة...</h3>
+            <div id="opts"></div>
         </div>
     </div>
 
-    <footer id="secretTrigger">هيئة تنظيم الدورات العسكرية</footer>
+    <div id="admin" class="section">
+        <div class="m-box">
+            <h2 id="admH">مركز السيطرة</h2>
+            <div id="admC"></div>
+            <button class="btn" style="background: #222;" onclick="location.reload()">تسجيل خروج</button>
+        </div>
+    </div>
+
+    <div id="gateway">
+        <div style="text-align: center;">
+            <div style="color: var(--p); margin-bottom: 10px;">أدخل كود التفويض</div>
+            <input type="password" id="pass" maxlength="4" oninput="checkP()" style="font-size: 2.5rem; letter-spacing: 15px; width: 220px;">
+        </div>
+    </div>
+
+    <footer><div class="rights" id="trig">هيئة تنظيم الدورات العسكرية</div></footer>
 
     <script>
-        function startSystem() {
-            document.getElementById('alertBox').style.display = 'block';
-            document.getElementById('alertBox').innerText = "تم التحقق بنجاح";
-            setTimeout(() => {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('testScreen').style.display = 'block';
-                document.getElementById('alertBox').style.display = 'none';
+        // درع الحماية
+        document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 67 || e.keyCode == 85))) return false; };
+        window.onblur = () => document.body.classList.add('alert-border');
+        window.onfocus = () => document.body.classList.remove('alert-border');
+
+        function showA(m) {
+            const a = document.getElementById('mAlert');
+            a.innerText = m; a.style.display = 'block';
+            setTimeout(() => a.style.display = 'none', 3000);
+        }
+
+        function verify() {
+            document.querySelector('footer').style.display = 'block';
+            showA("تم التحقق بنجاح");
+            setTimeout(() => { 
+                document.getElementById('entry').style.display = 'none';
+                document.getElementById('exam').style.display = 'block';
             }, 1500);
         }
 
-        // منع الزر الأيمن للحماية
-        document.oncontextmenu = () => false;
+        document.getElementById('trig').ondblclick = () => {
+            document.getElementById('gateway').style.display = 'flex';
+            document.getElementById('pass').focus();
+        };
+
+        function checkP() {
+            const p = document.getElementById('pass').value;
+            if(p === '9999') loadAdm('الرئيس');
+            else if(p === '0101') loadAdm('العضو');
+        }
+
+        function loadAdm(r) {
+            document.getElementById('gateway').style.display = 'none';
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById('admin').style.display = 'block';
+            document.getElementById('admH').innerText = "لوحة " + r;
+            document.getElementById('admC').innerHTML = r === 'الرئيس' ? '<p>صلاحيات السيطرة الكاملة نشطة.</p>' : '<p>صلاحيات المراقبة فقط.</p>';
+        }
     </script>
 </body>
 </html>
