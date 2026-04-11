@@ -6,211 +6,76 @@
     <title>منظومة هيئة تنظيم الدورات | دولة مارفل</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #00d4ff; --gold: #ffcc00; --red: #ff4b2b;
-            --bg: #050507; --card: #0d0d12;
-        }
-
+        :root { --primary: #3d5afe; --bg: #0a0a0f; --card: #12121c; }
         body {
-            margin: 0; padding: 0; font-family: 'Cairo', sans-serif;
-            background-color: var(--bg); color: white; min-height: 100vh;
+            margin: 0; font-family: 'Cairo', sans-serif;
+            background: var(--bg); color: white;
             display: flex; justify-content: center; align-items: center;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #050507 100%);
-            overflow: hidden; transition: 0.3s;
+            min-height: 100vh; overflow: hidden;
         }
+        .marvel-card {
+            background: var(--card); padding: 40px; border-radius: 20px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 350px;
+        }
+        .badge { border: 1px solid var(--primary); color: var(--primary); padding: 5px 15px; border-radius: 5px; font-size: 0.8rem; margin-bottom: 20px; display: inline-block; }
+        h1 { font-size: 2.5rem; margin: 10px 0; font-weight: 900; }
+        p { color: #666; margin-bottom: 30px; font-size: 0.9rem; }
+        .btn {
+            background: var(--primary); color: white; border: none;
+            padding: 15px; width: 100%; border-radius: 12px;
+            font-weight: bold; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(61, 90, 254, 0.4);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(61, 90, 254, 0.6); }
+        
+        /* التنبيه المخصص */
+        #alertBox { display: none; position: fixed; top: 20px; background: #1a1a2e; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 10px; z-index: 1000; }
 
-        body.alert-border { border: 10px solid var(--red); box-shadow: inset 0 0 50px var(--red); }
-
-        .section { display: none; width: 100%; max-width: 600px; padding: 20px; animation: fadeIn 0.5s; }
+        /* الأقسام المخفية */
+        .hidden-section { display: none; width: 90%; max-width: 600px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* نظام التنبيهات السيادية */
-        #marvelAlert {
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(13, 13, 18, 0.98); border: 1px solid var(--primary);
-            padding: 15px 40px; border-radius: 12px; z-index: 9999;
-            box-shadow: 0 0 20px var(--primary); text-align: center; font-weight: bold;
-        }
-
-        .marvel-box {
-            background: var(--card); padding: 40px; border-radius: 30px;
-            border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9);
-        }
-
-        /* نظام الأسئلة (سؤال تلو الآخر) */
-        .q-box { background: #111; padding: 25px; border-radius: 20px; border-right: 4px solid var(--primary); margin: 20px 0; }
-        .opt-btn {
-            display: block; width: 100%; padding: 14px; margin: 10px 0;
-            background: #000; border: 1px solid #333; color: white;
-            border-radius: 10px; cursor: pointer; transition: 0.3s; font-family: 'Cairo'; text-align: right;
-        }
-        .opt-btn:hover, .opt-btn.active { border-color: var(--primary); background: rgba(0,212,255,0.1); }
-
-        /* التحكم الإداري */
-        #adminGateway { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 8000; justify-content: center; align-items: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; text-align: center; font-family: 'Cairo'; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; }
-
-        footer { position: fixed; bottom: 20px; width: 100%; text-align: center; display: none; }
-        .rights { font-size: 0.8rem; color: #111; cursor: default; user-select: none; }
+        
+        footer { position: fixed; bottom: 20px; color: #111; cursor: pointer; font-size: 0.7rem; user-select: none; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <div id="marvelAlert">نظام مارفل السيادي</div>
+    <div id="alertBox">جاري معالجة البيانات...</div>
 
-    <div id="entry" class="section">
-        <div class="marvel-box" style="text-align: center;">
-            <div style="color: var(--primary); font-weight: bold; font-size: 0.9rem;">هيئة تنظيم الدورات العسكرية</div>
-            <h1 style="font-size: 3rem; margin: 5px 0;">دولة مارفل</h1>
-            <div id="subText" style="color: #666; font-weight: bold; margin-bottom: 30px;">النظام الموحد للاختبارات الإلكترونية</div>
-            <button class="btn" style="background: #5865F2; color: white;" onclick="verifyUser()">التحقق من الهوية الرقمية</button>
+    <div id="loginScreen">
+        <div class="marvel-card">
+            <div class="badge">نظام الهيئة الرقمي</div>
+            <h1>دولة مارفل</h1>
+            <p>يرجى إثبات الهوية للوصول للمنظومة</p>
+            <button class="btn" onclick="startSystem()">التحقق من الهوية الرقمية</button>
         </div>
     </div>
 
-    <div id="exam" class="section">
-        <div id="timer" style="position:fixed; top:20px; left:20px; font-weight:900; color:var(--primary); font-size:1.4rem;">20:00</div>
-        <div id="step" style="font-size: 0.8rem; color: #555;">المهمة 1 من 50</div>
-        <div class="q-box">
-            <h3 id="qText">جاري تحميل البيانات العسكرية...</h3>
-            <div id="opts"></div>
-        </div>
-        <button id="next" class="btn" style="background: var(--primary); color: #000; display: none;" onclick="goNext()">المهمة التالية</button>
-    </div>
-
-    <div id="adminPanel" class="section" style="max-width: 800px;">
-        <h2 id="adminHeader" style="border-bottom: 2px solid var(--gold); padding-bottom: 10px;">مركز السيطرة</h2>
-        <div id="adminContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-            </div>
-        <button class="btn" style="margin-top: 20px; background: #222; color: white;" onclick="location.reload()">تسجيل خروج</button>
-    </div>
-
-    <div id="adminGateway">
-        <div style="text-align: center;">
-            <div style="color: var(--primary); margin-bottom: 15px;">نظام الصلاحيات السيادي</div>
-            <input type="password" id="pass" maxlength="4" oninput="checkPass()" style="font-size: 2.5rem; letter-spacing: 15px; width: 250px;">
+    <div id="testScreen" class="hidden-section">
+        <h2 style="text-align: center;">بدء الاختبار العسكري</h2>
+        <div style="background: #111; padding: 20px; border-radius: 15px; border-right: 5px solid var(--primary);">
+            <p id="qText" style="color: white; font-size: 1.1rem;">جاري تحميل المهمة رقم 1...</p>
+            <div id="options">
+                </div>
         </div>
     </div>
 
-    <footer id="footer">
-        <div class="rights" id="trigger">هيئة تنظيم الدورات العسكرية</div>
-    </footer>
+    <footer id="secretTrigger">هيئة تنظيم الدورات العسكرية</footer>
 
     <script>
-        // 🛡️ درع الحماية العسكري
-        document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 67 || e.keyCode == 85))) return false; };
-        window.onblur = () => document.body.classList.add('alert-border');
-        window.onfocus = () => document.body.classList.remove('alert-border');
-
-        function showMsg(m) {
-            const a = document.getElementById('marvelAlert');
-            a.innerText = m; a.style.display = 'block';
-            setTimeout(() => a.style.display = 'none', 3000);
+        function startSystem() {
+            document.getElementById('alertBox').style.display = 'block';
+            document.getElementById('alertBox').innerText = "تم التحقق بنجاح";
+            setTimeout(() => {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('testScreen').style.display = 'block';
+                document.getElementById('alertBox').style.display = 'none';
+            }, 1500);
         }
 
-        function verifyUser() {
-            if(localStorage.getItem('lock') === 'true') return showMsg("المنظومة مغلقة بأمر الإدارة");
-            document.getElementById('footer').style.display = 'block';
-            showMsg("تم التحقق بنجاح. انقر مرتين بالأسفل للدخول السري.");
-            setTimeout(startTest, 2000);
-        }
-
-        document.getElementById('trigger').ondblclick = () => {
-            document.getElementById('adminGateway').style.display = 'flex';
-            document.getElementById('pass').focus();
-        };
-
-        function checkPass() {
-            const p = document.getElementById('pass').value;
-            if(p === '9999') loadAdmin('President');
-            else if(p === '0101') loadAdmin('Member');
-        }
-
-        function loadAdmin(role) {
-            document.getElementById('adminGateway').style.display = 'none';
-            document.getElementById('entry').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            const content = document.getElementById('adminContent');
-            
-            if(role === 'President') {
-                document.getElementById('adminHeader').innerText = "مركز السيطرة (الرئيس)";
-                content.innerHTML = `
-                    <div class="marvel-box" style="padding: 20px;">
-                        <h3>⚙️ الإعدادات</h3>
-                        <input type="text" id="newTitle" placeholder="مسمى الدورة">
-                        <button class="btn" style="background: var(--gold);" onclick="setVal('title', 'newTitle')">تحديث</button>
-                    </div>
-                    <div class="marvel-box" style="padding: 20px;">
-                        <h3>🚫 السيادة</h3>
-                        <button class="btn" style="background: var(--red); color: white;" onclick="toggleLock()">قفل / فتح النظام</button>
-                    </div>
-                `;
-            } else {
-                document.getElementById('adminHeader').innerText = "بوابة الأعضاء (مراقب)";
-                content.innerHTML = `
-                    <div class="marvel-box" style="padding: 20px;">
-                        <h3>📋 مراقبة</h3>
-                        <p>صلاحيات العرض فقط نشطة.</p>
-                        <button class="btn" style="background: var(--primary); color: black;">قائمة الطلاب</button>
-                    </div>
-                `;
-            }
-        }
-
-        // 📝 نظام الـ 50 سؤالاً (نماذج)
-        const questions = [
-            {q: "ما هو الإجراء الأول عند رصد متسلل؟", o: ["الاشتباك", "التبليغ والتأمين", "الانسحاب"]},
-            {q: "رتبة ضابط أمن الوزارات تتبع أي قطاع؟", o: ["الشرطة", "رئاسة الوزراء", "الجيش"]},
-            {q: "ما هو تصنيف دولة مارفل؟", o: ["دولة عسكرية", "دولة مدنية", "تجارية"]},
-            // يمكنك إضافة الـ 50 سؤالاً هنا بنفس النمط
-        ];
-
-        let cur = 0;
-        function startTest() {
-            document.getElementById('entry').style.display = 'none';
-            document.getElementById('exam').style.display = 'block';
-            loadQ();
-            let s = 1200; // 20 دقيقة
-            setInterval(() => {
-                let m = Math.floor(s/60), sec = s%60;
-                document.getElementById('timer').innerText = `${m}:${sec<10?'0':''}${sec}`;
-                if(s-- <= 0) location.reload();
-            }, 1000);
-        }
-
-        function loadQ() {
-            document.getElementById('step').innerText = `المهمة ${cur+1} من ${questions.length}`;
-            document.getElementById('qText').innerText = questions[cur].q;
-            const box = document.getElementById('opts');
-            box.innerHTML = "";
-            document.getElementById('next').style.display = 'none';
-            questions[cur].o.sort(() => Math.random() - 0.5).forEach(opt => {
-                const b = document.createElement('button');
-                b.className = 'opt-btn'; b.innerText = opt;
-                b.onclick = () => {
-                    document.querySelectorAll('.opt-btn').forEach(x => x.classList.remove('active'));
-                    b.classList.add('active');
-                    document.getElementById('next').style.display = 'block';
-                };
-                box.appendChild(b);
-            });
-        }
-
-        function goNext() {
-            if(cur < questions.length - 1) { cur++; loadQ(); }
-            else { showMsg("تم إرسال التقرير النهائي للقيادة"); setTimeout(() => location.reload(), 2000); }
-        }
-
-        function setVal(k, i) { localStorage.setItem(k, document.getElementById(i).value); showMsg("تم التحديث"); location.reload(); }
-        function toggleLock() { 
-            const l = localStorage.getItem('lock') === 'true';
-            localStorage.setItem('lock', !l); showMsg(l ? "تم فتح النظام" : "تم قفل النظام"); 
-        }
-
-        window.onload = () => {
-            const t = localStorage.getItem('title');
-            if(t) document.getElementById('subText').innerText = t;
-        };
+        // منع الزر الأيمن للحماية
+        document.oncontextmenu = () => false;
     </script>
 </body>
 </html>
