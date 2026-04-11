@@ -7,21 +7,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --p: #00d4ff; --g: #ffcc00; --r: #ff4b2b; --bg: #050507; --c: #0d0d12; }
-        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; transition: 0.3s; border: 0px solid transparent; }
+        body { margin: 0; padding: 0; font-family: 'Cairo', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; transition: 0.3s; }
         body.alert-border { border: 10px solid var(--r); box-shadow: inset 0 0 50px var(--r); }
-        .section { display: none; width: 100%; max-width: 750px; padding: 20px; animation: fadeIn 0.5s; }
+        .section { display: none; width: 100%; max-width: 800px; padding: 20px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         #mAlert { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(13, 13, 18, 0.98); border: 1px solid var(--p); padding: 15px 40px; border-radius: 12px; z-index: 9999; box-shadow: 0 0 20px var(--p); text-align: center; font-weight: bold; }
         .m-box { background: var(--c); padding: 35px; border-radius: 30px; border: 1px solid rgba(0, 212, 255, 0.1); box-shadow: 0 0 60px rgba(0,0,0,0.9); text-align: center; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 15px; font-size: 1rem; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-family: 'Cairo'; transition: 0.3s; background: #5865F2; color: white; margin-top: 15px; }
         .btn-gold { background: var(--g); color: black; }
         .btn-red { background: var(--r); color: white; }
-        input, textarea, select { width: 100%; padding: 14px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; text-align: center; font-family: 'Cairo'; box-sizing: border-box; }
+        input, textarea, select { width: 100%; padding: 14px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 10px; text-align: right; font-family: 'Cairo'; box-sizing: border-box; font-size: 1rem; }
         #gateway { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 8000; justify-content: center; align-items: center; }
         footer { position: fixed; bottom: 20px; width: 100%; text-align: center; display: none; }
         .rights { font-size: 0.8rem; color: #111; cursor: default; user-select: none; }
         .q-card { background: #16161f; padding: 25px; border-radius: 20px; border-right: 6px solid var(--p); text-align: right; margin: 20px 0; }
-        .opt-btn { display: block; width: 100%; background: #000; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #222; color: white; text-align: right; cursor: pointer; transition: 0.2s; font-family: 'Cairo'; }
+        .opt-btn { display: block; width: 100%; background: #000; padding: 15px; margin: 10px 0; border-radius: 10px; border: 1px solid #222; color: white; text-align: right; cursor: pointer; transition: 0.2s; }
         .opt-btn:hover, .opt-btn.active { border-color: var(--p); background: rgba(0, 212, 255, 0.05); }
         #timer { position: fixed; top: 25px; left: 25px; font-weight: 900; color: var(--p); font-size: 1.6rem; }
     </style>
@@ -48,92 +48,143 @@
 
     <div id="admin" class="section">
         <div class="m-box">
-            <h2 id="admTitle" style="color: var(--g);">مركز التحكم</h2>
+            <h2 id="admH" style="color: var(--g);">إدارة المنظومة</h2>
             <div id="adminZones"></div>
-            <button class="btn" style="background: #1a1a1a; margin-top: 20px;" onclick="location.reload()">إغلاق المنظومة</button>
+            <button class="btn" style="background: #111; margin-top: 20px;" onclick="location.reload()">تسجيل خروج</button>
         </div>
     </div>
 
     <div id="gateway">
         <div style="text-align: center;">
-            <input type="password" id="pc" maxlength="4" oninput="auth()" placeholder="••••" style="font-size: 3rem; letter-spacing: 20px; width: 250px; background:none; border:none; border-bottom:2px solid #333;">
+            <input type="password" id="passCode" maxlength="4" oninput="auth()" placeholder="••••" style="font-size: 3rem; letter-spacing: 20px; width: 250px; border:none; border-bottom:2px solid #333; background:none; color:var(--p);">
         </div>
     </div>
 
     <footer><div class="rights" id="trigAdmin">هيئة تنظيم الدورات العسكرية</div></footer>
 
     <script>
-        let bank = JSON.parse(localStorage.getItem('m_bank')) || [];
+        let bank = JSON.parse(localStorage.getItem('marvel_bank')) || [];
         let cur = 0;
 
+        // الدرع الأمني الشامل
         document.onkeydown = (e) => { if (e.keyCode == 123 || (e.ctrlKey && (e.keyCode == 67 || e.keyCode == 85))) return false; };
         window.onblur = () => document.body.classList.add('alert-border');
         window.onfocus = () => document.body.classList.remove('alert-border');
 
-        function notify(msg) { const a = document.getElementById('mAlert'); a.innerText = msg; a.style.display = 'block'; setTimeout(() => a.style.display = 'none', 3000); }
+        function notify(msg) {
+            const a = document.getElementById('mAlert');
+            a.innerText = msg; a.style.display = 'block';
+            setTimeout(() => a.style.display = 'none', 3000);
+        }
 
         function initVerify() {
-            if(localStorage.getItem('s_lock') === 'true') return notify("المنظومة مغلقة");
-            if(bank.length === 0) return notify("لا توجد مهام محقونة حالياً");
+            if(localStorage.getItem('sys_lock') === 'true') return notify("المنظومة مغلقة حالياً بأمر القيادة");
+            if(bank.length === 0) return notify("لا توجد مهام محقونة؛ يرجى مراجعة الرئيس");
             document.querySelector('footer').style.display = 'block';
-            notify("تم التحقق بنجاح");
-            setTimeout(() => { document.getElementById('entry').style.display = 'none'; document.getElementById('exam').style.display = 'block'; renderQ(); startT(); }, 1500);
+            notify("تم التحقق بنجاح؛ جاري تحميل المهام...");
+            setTimeout(() => {
+                document.getElementById('entry').style.display = 'none';
+                document.getElementById('exam').style.display = 'block';
+                renderQ(); startTimer();
+            }, 1500);
         }
 
-        document.getElementById('trigAdmin').ondblclick = () => { document.getElementById('gateway').style.display = 'flex'; document.getElementById('pc').focus(); };
+        // المدخل السري (Double Click)
+        document.getElementById('trigAdmin').ondblclick = () => {
+            document.getElementById('gateway').style.display = 'flex';
+            document.getElementById('passCode').focus();
+        };
 
         function auth() {
-            const code = document.getElementById('pc').value;
-            if(code === '9999') loadP('الرئيس');
-            else if(code === '0101') loadP('عضو الهيئة');
+            const code = document.getElementById('passCode').value;
+            if(code === '9999') loadPanel('الرئيس');
+            else if(code === '0101') loadPanel('العضو');
         }
 
-        function loadP(role) {
+        function loadPanel(role) {
             document.getElementById('gateway').style.display = 'none';
-            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById('entry').style.display = 'none';
+            document.getElementById('exam').style.display = 'none';
             document.getElementById('admin').style.display = 'block';
-            document.getElementById('admTitle').innerText = "مركز التحكم - " + role;
-            const z = document.getElementById('adminZones');
+            document.getElementById('admH').innerText = "مركز التحكم - " + role;
+            
+            const zones = document.getElementById('adminZones');
             if(role === 'الرئيس') {
-                z.innerHTML = `
-                    <input type="text" id="newS" placeholder="تغيير مسمى الموقع">
-                    <button class="btn btn-gold" onclick="setS()">تحديث المسمى</button>
+                zones.innerHTML = `
+                    <input type="text" id="newSub" placeholder="تغيير مسمى الموقع">
+                    <button class="btn btn-gold" onclick="setSub()">تحديث المسمى</button>
                     <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
-                    <select id="qType" onchange="document.getElementById('mI').style.display = this.value === 'text' ? 'none' : 'block';">
+                    <select id="qType" onchange="toggleInputs()">
                         <option value="multi">اختيار من متعدد</option>
-                        <option value="text">مقالي (كتابة)</option>
+                        <option value="text">مقالي (كتابة نصية)</option>
                     </select>
-                    <input type="text" id="qT" placeholder="نص السؤال">
-                    <div id="mI"><input type="text" id="o1" placeholder="الإجابة الصحيحة"><input type="text" id="o2" placeholder="خيار 2"><input type="text" id="o3" placeholder="خيار 3"></div>
-                    <button class="btn btn-gold" onclick="add()">حفظ السؤال في البنك</button>
-                    <button class="btn btn-red" onclick="localStorage.removeItem('m_bank'); location.reload();">تصفير البنك</button>
+                    <input type="text" id="qTitle" placeholder="نص السؤال العسكري">
+                    <div id="mInputs">
+                        <input type="text" id="o1" placeholder="الخيار الأول (الصحيح)">
+                        <input type="text" id="o2" placeholder="الخيار الثاني">
+                        <input type="text" id="o3" placeholder="الخيار الثالث">
+                    </div>
+                    <button class="btn btn-gold" onclick="addQ()">حفظ وحقن السؤال</button>
+                    <button class="btn btn-red" onclick="resetBank()">تصفير بنك الأسئلة</button>
                 `;
-            } else { z.innerHTML = `<p>صلاحيات المراقبة نشطة.</p>`; }
+            } else {
+                zones.innerHTML = `<div class="q-card" style="text-align:center;">صلاحيات العضو تتيح لك مراقبة حالة المنظومة فقط.</div>`;
+            }
         }
 
-        function add() {
-            const q = { t: document.getElementById('qT').value, type: document.getElementById('qType').value, opts: [document.getElementById('o1').value, document.getElementById('o2').value, document.getElementById('o3').value] };
-            bank.push(q); localStorage.setItem('m_bank', JSON.stringify(bank));
-            notify("تم الحقن"); document.getElementById('qT').value = "";
+        function toggleInputs() { document.getElementById('mInputs').style.display = document.getElementById('qType').value === 'text' ? 'none' : 'block'; }
+        
+        function addQ() {
+            const q = {
+                title: document.getElementById('qTitle').value,
+                type: document.getElementById('qType').value,
+                opts: [document.getElementById('o1').value, document.getElementById('o2').value, document.getElementById('o3').value]
+            };
+            bank.push(q);
+            localStorage.setItem('marvel_bank', JSON.stringify(bank));
+            notify("تم حقن السؤال بنجاح");
+            document.getElementById('qTitle').value = "";
         }
 
-        function setS() { localStorage.setItem('s_sub', document.getElementById('newS').value); location.reload(); }
+        function setSub() { localStorage.setItem('sys_subtitle', document.getElementById('newSub').value); location.reload(); }
+        function resetBank() { if(confirm("هل تريد مسح بنك الأسئلة بالكامل؟")){ localStorage.removeItem('marvel_bank'); location.reload(); } }
 
         function renderQ() {
             const q = bank[cur];
-            let h = `<div class="q-card"><small>مهمة ${cur+1}</small><h3>${q.t}</h3>`;
+            let html = `<div class="q-card"><small style="color:var(--p)">المهمة ${cur+1} من ${bank.length}</small><h3>${q.title}</h3>`;
             if(q.type === 'multi') {
-                [...q.opts].sort(() => Math.random() - 0.5).forEach(o => { if(o) h += `<div class="opt-btn" onclick="sel(this)">${o}</div>`; });
-            } else { h += `<textarea id="ans" placeholder="اكتب الإجابة..." oninput="sel()"></textarea>`; }
-            document.getElementById('qContent').innerHTML = h + `</div>`;
+                let s = [...q.opts].sort(() => Math.random() - 0.5);
+                s.forEach(o => { if(o) html += `<div class="opt-btn" onclick="sel(this)">${o}</div>`; });
+            } else {
+                html += `<textarea id="txtAns" placeholder="اكتب إجابتك هنا بوضوح..." oninput="sel()"></textarea>`;
+            }
+            document.getElementById('qContent').innerHTML = html + `</div>`;
             document.getElementById('nextBtn').style.display = 'none';
         }
 
-        function sel(el) { if(el) { document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); } document.getElementById('nextBtn').style.display = 'block'; }
-        function nextStep() { if(cur < bank.length - 1) { cur++; renderQ(); } else { notify("انتهت المهمات"); setTimeout(() => location.reload(), 2000); } }
-        function startT() { let t = 1200; setInterval(() => { let m = Math.floor(t/60), s = t%60; document.getElementById('timer').innerText = `${m}:${s<10?'0':''}${s}`; t--; }, 1000); }
+        function sel(el) {
+            if(el) { document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+            document.getElementById('nextBtn').style.display = 'block';
+        }
 
-        window.onload = () => { if(localStorage.getItem('s_sub')) document.getElementById('subDisplay').innerText = localStorage.getItem('s_sub'); };
+        function nextStep() {
+            if(cur < bank.length - 1) { cur++; renderQ(); }
+            else { notify("تم إنهاء كافة المهام بنجاح"); setTimeout(() => location.reload(), 3000); }
+        }
+
+        function startTimer() {
+            let t = 1200;
+            setInterval(() => {
+                let m = Math.floor(t/60), s = t%60;
+                document.getElementById('timer').innerText = `${m}:${s<10?'0':''}${s}`;
+                t--;
+            }, 1000);
+        }
+
+        window.onload = () => {
+            const s = localStorage.getItem('sys_subtitle');
+            if(s) document.getElementById('subDisplay').innerText = s;
+        };
     </script>
 </body>
 </html>
