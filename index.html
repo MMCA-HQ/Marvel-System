@@ -2,189 +2,214 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>هيئة تنظيم الدورات العسكرية | النظام الموحد</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الإدارة المتكامل</title>
     
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
-        /* التنسيق البصري العسكري (حسب الصور) */
-        :root { --m-green: #2d5a27; --m-dark: #050505; --m-gold: #d4af37; --m-red: #ff0000; }
-        body { background-color: var(--m-dark); color: white; font-family: 'Tahoma', sans-serif; margin: 0; overflow: hidden; user-select: none; }
-        
-        /* بوابة التحقق والتمويه */
-        #gateway { position: fixed; inset: 0; background: radial-gradient(circle, #0d1a0b 0%, #000 100%); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .panel { border: 2px solid var(--m-green); padding: 40px; text-align: center; background: rgba(0,0,0,0.9); box-shadow: 0 0 30px var(--m-green); }
-        .btn-auth { background: #5865F2; color: white; border: none; padding: 15px 30px; cursor: pointer; font-weight: bold; font-size: 18px; }
+        /* --- قسم التصميم (CSS) --- */
+        :root {
+            --primary-color: #0984e3;
+            --bg-color: #f0f2f5;
+            --text-dark: #2d3436;
+            --text-light: #636e72;
+            --white: #ffffff;
+        }
 
-        /* النظام الرئيسي */
-        #main-system { display: none; padding: 20px; height: 100vh; overflow-y: auto; }
-        .section { display: none; }
-        
-        /* الرقابة الصارمة (14 لوق) */
-        .logs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin-top: 20px; }
-        .log-box { background: #111; border: 1px solid var(--m-green); padding: 10px; height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; }
-        .log-box h4 { color: var(--m-gold); margin-top: 0; border-bottom: 1px solid #222; padding-bottom: 5px; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
 
-        /* الحماية والعين الحمراء */
-        .red-eye { animation: red-flash 0.5s infinite; }
-        @keyframes red-flash { 0% { box-shadow: inset 0 0 50px red; } 100% { box-shadow: inset 0 0 150px red; } }
-        
-        /* شريط الإنجاز والمسودة */
-        .progress-container { width: 100%; height: 10px; background: #222; margin: 20px 0; }
-        #progress-fill { height: 100%; background: var(--m-green); width: 0%; transition: 0.5s; }
-        .notes-area { position: fixed; left: 10px; top: 100px; width: 180px; height: 300px; background: rgba(0,0,0,0.8); border: 1px solid var(--m-green); padding: 5px; }
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-        footer { position: fixed; bottom: 0; width: 100%; text-align: center; padding: 10px; background: rgba(0,0,0,0.8); cursor: pointer; transition: 0.3s; }
+        .main-card {
+            background: var(--white);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: var(--text-dark);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            outline: none;
+            transition: 0.3s;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            padding: 0 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #0773c5;
+            transform: translateY(-2px);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-right: 6px solid var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .delete-btn {
+            background: #ff7675;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 5px;
+        }
+
+        .delete-btn:hover {
+            background: #d63031;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-light);
+            margin-top: 20px;
+            font-style: italic;
+        }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-    <div id="gateway">
-        <div class="panel">
-            <h1>هيئة تنظيم الدورات العسكرية</h1>
-            <p>دولة مارفل | النظام الموحد للاختبارات</p>
-            <button class="btn-auth" onclick="startAuth()">التحقق من الهوية الرقمية</button>
+    <div class="main-card">
+        <header>
+            <h1>نظام إدارة العمليات</h1>
+            <p>تحكم بمهامك وبياناتك بسهولة</p>
+        </header>
+
+        <div class="input-group">
+            <input type="text" id="taskInput" placeholder="أضف مهمة أو بلاغ جديد...">
+            <button onclick="addNewTask()">إضافة</button>
         </div>
+
+        <ul id="taskList" class="task-list">
+            </ul>
+        
+        <div id="emptyMsg" class="empty-state">لا توجد مهام حالياً..</div>
     </div>
 
-    <main id="main-system">
-        <div id="page-president" class="section">
-            <h2 style="color:var(--m-gold)">لوحة السيادة الإدارية (الرئيس)</h2>
-            <div class="controls">
-                <button onclick="globalLock()" style="background:red; color:white;">قفل النظام الشامل</button>
-                <button onclick="systemReset()">تصفير المنظومة</button>
-                <button onclick="addQuestion()">إضافة سؤال جديد</button>
-            </div>
-            <h3>الرقابة الصارمة (Logs)</h3>
-            <div class="logs-grid" id="logs-container"></div>
-        </div>
-
-        <div id="page-members" class="section">
-            <h2>بوابة الأعضاء (هيئة الإشراف)</h2>
-            <div class="member-tools">
-                <div class="log-box" style="height:300px; width:100%;">
-                    <h4>مراقب الجلسات الحية</h4>
-                    <div id="live-users"></div>
-                </div>
-                <button onclick="approveAll()">قبول الكل</button> <button onclick="rejectAll()">رفض الكل</button>
-            </div>
-        </div>
-
-        <div id="page-exam" class="section">
-            <div style="text-align:center;">
-                <h3>هيئة تنظيم الدورات العسكرية</h3>
-                <h4>دولة مارفل</h4>
-                <p>الدورة الحالية: <span id="course-name">نظام العمليات</span></p>
-            </div>
-            <div class="progress-container"><div id="progress-fill"></div></div>
-            <div id="exam-questions" class="panel">
-                </div>
-            <div class="notes-area">
-                <small>المسودة العسكرية</small>
-                <textarea style="width:100%; height:90%; background:black; color:lime; border:none;"></textarea>
-            </div>
-        </div>
-    </main>
-
-    <footer id="main-footer" style="opacity:0" ondblclick="secretEntry()">
-        هيئة تنظيم الدورات العسكرية © 2026
-    </footer>
-
     <script>
-        // إعدادات Firebase الخاصة بك
-        const firebaseConfig = {
-            apiKey: "AIzaSyAALZ-v8wA_5mjUVSqW1uLXMwMkskpDaGM",
-            authDomain: "mmca-authority.firebaseapp.com",
-            projectId: "mmca-authority",
-            databaseURL: "https://mmca-authority-default-rtdb.firebaseio.com"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+        const emptyMsg = document.getElementById('emptyMsg');
 
-        // إعدادات ديسكورد
-        const CLIENT_ID = '1470440081612603465';
-        const REDIRECT_URI = window.location.origin + window.location.pathname;
+        // مصفوفة لتخزين البيانات مؤقتاً
+        let dataStore = [];
 
-        // دالة التحقق
-        function startAuth() {
-            const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
-            window.location.href = url;
-        }
-
-        window.onload = () => {
-            const hash = window.location.hash.slice(1);
-            const params = new URLSearchParams(hash);
-            const token = params.get('access_token');
-
-            if (token) {
-                fetch('https://discord.com/api/users/@me', { headers: { authorization: `Bearer ${token}` } })
-                .then(r => r.json())
-                .then(user => {
-                    saveLog("لوق دخول", `المستخدم ${user.username} (ID: ${user.id}) قام بالتحقق`);
-                    openAccessControl();
+        function render() {
+            // مسح القائمة الحالية قبل إعادة الرسم
+            taskList.innerHTML = "";
+            
+            if (dataStore.length === 0) {
+                emptyMsg.style.display = "block";
+            } else {
+                emptyMsg.style.display = "none";
+                
+                dataStore.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'task-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong>#${index + 1}</strong>
+                            <span>${item}</span>
+                        </div>
+                        <button class="delete-btn" onclick="deleteTask(${index})">حذف</button>
+                    `;
+                    taskList.appendChild(li);
                 });
             }
-        };
+        }
 
-        function openAccessControl() {
-            const code = prompt("أدخل كود الوصول العسكري الخاص بك:");
-            document.getElementById('gateway').style.display = 'none';
-            document.getElementById('main-system').style.display = 'block';
-            document.getElementById('main-footer').style.opacity = '1';
-
-            if (code === "9999") {
-                showPage('page-president');
-                initLogs();
-            } else if (code === "0101") {
-                showPage('page-members');
+        function addNewTask() {
+            const val = taskInput.value.trim();
+            if (val !== "") {
+                dataStore.push(val);
+                taskInput.value = ""; // تنظيف الحقل
+                render(); // تحديث الواجهة
             } else {
-                showPage('page-exam');
-                enableProtection();
+                alert("يرجى كتابة شيء أولاً!");
             }
         }
 
-        function showPage(id) {
-            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
+        function deleteTask(index) {
+            dataStore.splice(index, 1);
+            render();
         }
 
-        // إنشاء الـ 14 لوق للرئيس
-        function initLogs() {
-            const names = [
-                "لوق الدخول والخروج من الاختبار", "لوق دخول وخروج الأعضاء", "لوق دخول وخروج الرئيس",
-                "لوق قبول ورفض الطلبات", "لوق بدء وانتهاء الاختبار", "لوق اجابات الطلاب",
-                "لوق تصحيح الأعضاء للاجابات", "لوق الغش اثناء الاختبار", "لوق التلاعب",
-                "لوق محاولة الدخول الى الصفحات الاخرى", "لوق التعديلات على الاقسام",
-                "لوق الاضافات", "لوق الحذف", "لوق الطوارئ"
-            ];
-            const container = document.getElementById('logs-container');
-            container.innerHTML = names.map((n, i) => `<div class="log-box"><h4>${n}</h4><div id="l-${i}"></div></div>`).join('');
-        }
+        // تشغيل أولي
+        render();
 
-        function saveLog(type, msg) {
-            db.collection("system_logs").add({ type: type, message: msg, time: new Date().toLocaleString() });
-        }
-
-        // نظام الحماية (العين الحمراء)
-        function enableProtection() {
-            document.addEventListener('keydown', e => {
-                if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && e.keyCode == 73)) {
-                    triggerEye();
-                    return false;
-                }
-            });
-            window.onblur = () => triggerEye();
-        }
-
-        function triggerEye() {
-            document.body.classList.add('red-eye');
-            saveLog("لوق الغش", "محاولة تلاعب أو مغادرة الصفحة");
-            setTimeout(() => document.body.classList.remove('red-eye'), 2000);
-        }
-
-        function secretEntry() {
-            alert("تم تفعيل المدخل السري للرئيس");
-        }
+        // تفعيل الإضافة عند الضغط على زر Enter
+        taskInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                addNewTask();
+            }
+        });
     </script>
 </body>
 </html>
