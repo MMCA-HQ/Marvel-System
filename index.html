@@ -3,213 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الإدارة المتكامل</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-
+    <title>نظام الإدارة المتكامل | تجربة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- قسم التصميم (CSS) --- */
+        /* تصميم فخم بلمسات زرقاء ورمادية داكنة */
         :root {
-            --primary-color: #0984e3;
-            --bg-color: #f0f2f5;
-            --text-dark: #2d3436;
-            --text-light: #636e72;
-            --white: #ffffff;
+            --bg-dark: #121417;
+            --card-bg: #1e2126;
+            --accent-blue: #00d2ff;
+            --text-main: #ffffff;
+            --text-dim: #a0a0a0;
+            --success: #00b894;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Tajawal', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
 
         body {
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             padding: 20px;
+            line-height: 1.6;
         }
 
-        .main-card {
-            background: var(--white);
-            width: 100%;
-            max-width: 500px;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        }
+        .container { max-width: 1100px; margin: auto; }
 
+        /* الهيدر */
         header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            color: var(--text-dark);
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-        }
-
-        header p {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        input {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #eee;
-            border-radius: 12px;
-            outline: none;
-            transition: 0.3s;
-            font-size: 1rem;
-        }
-
-        input:focus {
-            border-color: var(--primary-color);
-        }
-
-        button {
-            padding: 0 25px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background-color: #0773c5;
-            transform: translateY(-2px);
-        }
-
-        .task-list {
-            list-style: none;
-        }
-
-        .task-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 12px;
-            border-right: 6px solid var(--primary-color);
-            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: slideIn 0.4s ease forwards;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .delete-btn {
-            background: #ff7675;
-            padding: 5px 10px;
+        .status-badge {
+            background: rgba(0, 210, 255, 0.1);
+            color: var(--accent-blue);
+            padding: 5px 15px;
+            border-radius: 20px;
             font-size: 0.8rem;
-            border-radius: 5px;
+            border: 1px solid var(--accent-blue);
         }
 
-        .delete-btn:hover {
-            background: #d63031;
+        /* كروت الإحصائيات */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        .empty-state {
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
             text-align: center;
-            color: var(--text-light);
-            margin-top: 20px;
-            font-style: italic;
+            border: 1px solid #2d2d2d;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--accent-blue); }
+        .stat-card h3 { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 10px; }
+        .stat-card p { font-size: 1.8rem; font-weight: bold; color: var(--accent-blue); }
+
+        /* الأقسام الرئيسية */
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #2d2d2d;
+        }
+
+        h2 { font-size: 1.2rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 5px; height: 20px; background: var(--accent-blue); display: inline-block; border-radius: 5px; }
+
+        /* النموذج */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.9rem; }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            background: #25282e;
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+            resize: none;
+        }
+        input:focus { border-color: var(--accent-blue); }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { opacity: 0.9; box-shadow: 0 5px 15px rgba(0,210,255,0.3); }
+
+        /* قائمة التعاميم */
+        .announcement-item {
+            background: #25282e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            border-right: 4px solid var(--accent-blue);
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* السجل (Logs) */
+        .log-list { font-family: monospace; font-size: 0.8rem; color: #00ff88; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <div class="main-card">
-        <header>
-            <h1>نظام إدارة العمليات</h1>
-            <p>تحكم بمهامك وبياناتك بسهولة</p>
-        </header>
-
-        <div class="input-group">
-            <input type="text" id="taskInput" placeholder="أضف مهمة أو بلاغ جديد...">
-            <button onclick="addNewTask()">إضافة</button>
+<div class="container">
+    <header>
+        <div>
+            <h1>نظام الإدارة المركزية</h1>
+            <p style="color: var(--text-dim);">لوحة التحكم التجريبية - v1.0</p>
         </div>
+        <div class="status-badge">النظام متصل (Live)</div>
+    </header>
 
-        <ul id="taskList" class="task-list">
-            </ul>
-        
-        <div id="emptyMsg" class="empty-state">لا توجد مهام حالياً..</div>
+    <div class="stats-grid">
+        <div class="stat-card"><h3>إجمالي الأعضاء</h3><p id="memberCount">1,240</p></div>
+        <div class="stat-card"><h3>البلاغات اليومية</h3><p>42</p></div>
+        <div class="stat-card"><h3>حالة السيرفر</h3><p style="color: var(--success);">مستقر</p></div>
     </div>
 
-    <script>
-        const taskInput = document.getElementById('taskInput');
-        const taskList = document.getElementById('taskList');
-        const emptyMsg = document.getElementById('emptyMsg');
+    <div class="main-content">
+        <div class="card">
+            <h2>إصدار تعميم جديد</h2>
+            <div class="form-group">
+                <label>نص التعميم الإداري</label>
+                <textarea id="annContent" rows="4" placeholder="اكتب التعليمات هنا..."></textarea>
+            </div>
+            <button onclick="postAnn()">نشر التعميم فوراً</button>
 
-        // مصفوفة لتخزين البيانات مؤقتاً
-        let dataStore = [];
+            <div id="annArea" style="margin-top: 30px;">
+                <h2 style="font-size: 1rem; color: var(--text-dim);">التعاميم النشطة</h2>
+                <div id="annList">
+                    <div class="announcement-item">أهلاً بك في النسخة التجريبية، يمكنك البدء بإضافة مهامك.</div>
+                </div>
+            </div>
+        </div>
 
-        function render() {
-            // مسح القائمة الحالية قبل إعادة الرسم
-            taskList.innerHTML = "";
-            
-            if (dataStore.length === 0) {
-                emptyMsg.style.display = "block";
-            } else {
-                emptyMsg.style.display = "none";
-                
-                dataStore.forEach((item, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'task-item';
-                    li.innerHTML = `
-                        <div>
-                            <strong>#${index + 1}</strong>
-                            <span>${item}</span>
-                        </div>
-                        <button class="delete-btn" onclick="deleteTask(${index})">حذف</button>
-                    `;
-                    taskList.appendChild(li);
-                });
-            }
+        <div class="card">
+            <h2>سجل العمليات</h2>
+            <div id="logArea" class="log-list">
+                <div class="log-entry">> جاري تشغيل النظام...</div>
+                <div class="log-entry">> تم تحميل الواجهة بنجاح.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function addLog(message) {
+        const logArea = document.getElementById('logArea');
+        const time = new Date().toLocaleTimeString();
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = `> [${time}] ${message}`;
+        logArea.prepend(entry);
+    }
+
+    function postAnn() {
+        const content = document.getElementById('annContent').value;
+        const annList = document.getElementById('annList');
+
+        if (content.trim() === "") {
+            alert("يرجى كتابة نص التعميم!");
+            return;
         }
 
-        function addNewTask() {
-            const val = taskInput.value.trim();
-            if (val !== "") {
-                dataStore.push(val);
-                taskInput.value = ""; // تنظيف الحقل
-                render(); // تحديث الواجهة
-            } else {
-                alert("يرجى كتابة شيء أولاً!");
-            }
-        }
+        // إضافة التعميم للواجهة
+        const item = document.createElement('div');
+        item.className = 'announcement-item';
+        item.innerText = content;
+        annList.prepend(item);
 
-        function deleteTask(index) {
-            dataStore.splice(index, 1);
-            render();
-        }
+        // إضافة سجل
+        addLog("تم نشر تعميم جديد بنجاح.");
+        
+        // مسح الخانة
+        document.getElementById('annContent').value = "";
+    }
 
-        // تشغيل أولي
-        render();
+    // إضافة سجل عشوائي كل 10 ثوانٍ للمحاكاة
+    setInterval(() => {
+        addLog("فحص روتيني لاستقرار النظام...");
+    }, 10000);
+</script>
 
-        // تفعيل الإضافة عند الضغط على زر Enter
-        taskInput.addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                addNewTask();
-            }
-        });
-    </script>
 </body>
 </html>
